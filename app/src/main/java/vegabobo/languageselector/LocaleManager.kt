@@ -15,6 +15,13 @@ class LocaleManager {
         for (locale in locales) {
             val languageName = locale.capDisplayName()
             val languageTag = locale.toLanguageTag()
+
+            if (languageTag != "zh-Hans" && languageTag != "zh-Hans-CN" && languageTag != "zh-Hans-HK"
+                && languageTag != "zh-Hant" && languageTag != "zh-Hant-TW" &&
+                languageTag != "en-GB" && languageTag != "en-US" && languageTag != "en-HK") {
+                continue
+            }
+
             val language = locale.getDisplayLanguage(locale).replaceFirstChar { it.uppercaseChar() }
 
             val existingLocale = localeListMap[language]

@@ -61,7 +61,12 @@ class AppInfoVm @Inject constructor(
             }
         }
 
-        _uiState.update { it.copy(listOfAllLanguages = localeManager.localeList) }
+        // Only filter English and Chinese
+        _uiState.update { it.copy(
+            listOfAllLanguages = localeManager.localeList.filter { localeRegion ->
+                localeRegion.language == "English" || localeRegion.language == "中文"
+            }.toMutableList()
+        ) }
     }
 
     fun updateCurrentLanguageState() {

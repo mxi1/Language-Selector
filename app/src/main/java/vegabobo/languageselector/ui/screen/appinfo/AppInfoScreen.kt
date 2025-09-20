@@ -27,8 +27,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -92,9 +94,7 @@ fun AppInfoScreen(
                     Image(
                         modifier = Modifier.size(84.dp),
                         bitmap = uiState.appIcon?.toBitmap()?.asImageBitmap()
-                            ?: BitmapFactory.decodeResource(
-                                ctx.resources, R.drawable.icon_placeholder
-                            ).asImageBitmap(),
+                            ?: ImageBitmap.imageResource(ctx.resources, R.drawable.icon_placeholder), // More idiomatic way to load resource as ImageBitmap
                         contentDescription = "App icon"
                     )
                     Column(

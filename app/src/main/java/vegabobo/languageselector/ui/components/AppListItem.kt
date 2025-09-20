@@ -8,8 +8,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -24,6 +26,24 @@ import androidx.compose.ui.unit.sp
 import androidx.core.graphics.drawable.toBitmap
 import vegabobo.languageselector.ui.screen.main.AppInfo
 
+import androidx.compose.runtime.remember
+
+@Composable
+private fun AppDetails(app: AppInfo, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy((-4).dp)
+    ) {
+        Text(text = app.name, fontSize = 18.sp, fontWeight = FontWeight.Medium, maxLines = 1)
+        Text(text = app.pkg, fontSize = 12.sp, maxLines = 1)
+        Row {
+            TextLabel(text = if (app.isSystemApp()) "System App" else "User App")
+            if (app.isModified())
+                TextLabel(text = "Modified")
+        }
+    }
+}
+
 @Composable
 fun AppListItem(
     modifier: Modifier = Modifier,
@@ -36,24 +56,16 @@ fun AppListItem(
             .then(modifier),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        val imageBitmap = remember(app.icon) { // Key the remember to app.icon
+            app.icon.toBitmap().asImageBitmap()
+        }
         Image(
             modifier = Modifier.size(32.dp),
-            bitmap = app.icon.toBitmap().asImageBitmap(),
-            contentDescription = "app icon"
+            bitmap = imageBitmap,
+            contentDescription = "${app.name} icon"
         )
-        Spacer(modifier = Modifier.padding(8.dp))
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy((-4).dp)
-        ) {
-            Text(text = app.name, fontSize = 18.sp, fontWeight = FontWeight.Medium, maxLines = 1)
-            Text(text = app.pkg, fontSize = 12.sp, maxLines = 1)
-            Row {
-                TextLabel(text = if (app.isSystemApp()) "System App" else "User App")
-                if (app.isModified())
-                    TextLabel(text = "Modified")
-            }
-        }
+        Spacer(modifier = Modifier.width(16.dp))
+        AppDetails(app = app, modifier = Modifier.weight(1f))
     }
 }
 
