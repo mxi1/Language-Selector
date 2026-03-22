@@ -3,7 +3,6 @@ package vegabobo.languageselector.ui.screen.main
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
-import androidx.compose.runtime.mutableStateListOf
 import vegabobo.languageselector.dao.AppInfoEntity
 
 enum class OperationMode {
@@ -15,8 +14,10 @@ enum class SnackBarDisplay {
 }
 
 data class MainScreenState(
-    val listOfApps: MutableList<AppInfo> = mutableStateListOf(),
-    val history: MutableList<AppInfo> = mutableStateListOf(),
+    val listOfApps: List<AppInfo> = emptyList(),
+    val displayedApps: List<AppInfo> = emptyList(),
+    val searchResults: List<AppInfo> = emptyList(),
+    val history: List<AppInfo> = emptyList(),
     val operationMode: OperationMode = OperationMode.NONE,
     val isDropdownVisible: Boolean = false,
     val isAboutDialogVisible: Boolean = false,
@@ -27,7 +28,7 @@ data class MainScreenState(
     /* Search bar */
     val isExpanded: Boolean = false,
     val searchTextFieldValue: String = "",
-    val selectLabels: MutableList<AppLabels> = mutableStateListOf()
+    val selectLabels: List<AppLabels> = emptyList()
 )
 
 enum class AppLabels {

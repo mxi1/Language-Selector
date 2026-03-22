@@ -1,6 +1,5 @@
 package vegabobo.languageselector.ui.components
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -19,14 +18,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.graphics.drawable.toBitmap
+import coil.compose.AsyncImage
 import vegabobo.languageselector.ui.screen.main.AppInfo
-
-import androidx.compose.runtime.remember
 
 @Composable
 private fun AppDetails(app: AppInfo, modifier: Modifier = Modifier) {
@@ -56,13 +52,10 @@ fun AppListItem(
             .then(modifier),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        val imageBitmap = remember(app.icon) { // Key the remember to app.icon
-            app.icon.toBitmap().asImageBitmap()
-        }
-        Image(
-            modifier = Modifier.size(32.dp),
-            bitmap = imageBitmap,
-            contentDescription = "${app.name} icon"
+        AsyncImage(
+            model = app.icon,
+            contentDescription = "${app.name} icon",
+            modifier = Modifier.size(32.dp)
         )
         Spacer(modifier = Modifier.width(16.dp))
         AppDetails(app = app, modifier = Modifier.weight(1f))

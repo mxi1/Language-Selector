@@ -62,6 +62,8 @@ dependencies {
     debugImplementation(libs.ui.tooling)
     debugImplementation(libs.ui.test.manifest)
 
+    implementation(libs.coil.compose)
+
     implementation(libs.libsu.core)
     implementation(libs.libsu.service)
 
