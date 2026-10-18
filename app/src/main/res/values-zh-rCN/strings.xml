@@ -1,30 +1,110 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_language">App语言</string>
-    <string name="system_default">系统默认</string>
-    <string name="user_languages">用户语言</string>
-    <string name="pinned">置顶:</string>
-    <string name="region">地区:</string>
-    <string name="all_languages">全部语言:</string>
-    <string name="show_only_user_apps">只显示用户应用</string>
-    <string name="show_system_apps">显示系统应用</string>
-    <string name="settings">设置</string>
-    <string name="open">打开</string>
-    <string name="close">关闭</string>
-    <string name="permissions_required">需要权限</string>
-    <string name="shizuku_required">该应用需要 Shizuku,请安装并启动 Shizuku,获得 Shizuku 权限后,你可以继续</string>
-    <string name="proceed">继续</string>
-    <string name="pinned_ok">%1$s 已置顶</string>
-    <string name="unpinned">%1$s 取消置顶</string>
-    <string name="about">关于</string>
-    <string name="deps_libs">依赖库信息:</string>
-    <string name="version">版本 %1$s (%2$s)</string>
-    <string name="app">应用</string>
-    <string name="ghrepo">Github 仓库</string>
-    <string name="view_source">查看源码</string>
-    <string name="loading">加载中...</string>
+    <string name="action_back">返回</string>
+    <string name="action_more">更多选项</string>
+    <string name="action_search">搜索</string>
+    <string name="action_clear">清除</string>
+    <string name="action_retry">重试</string>
+    <string name="action_cancel">取消</string>
+    <string name="action_ok">确定</string>
+    <string name="action_proceed">继续</string>
+    <string name="action_undo">撤销</string>
+    <string name="action_open">打开</string>
+    <string name="action_force_stop">强制停止</string>
+    <string name="action_app_settings">应用设置</string>
+    <string name="action_pin">置顶</string>
+    <string name="action_unpin">取消置顶</string>
+    <string name="action_reconnect">重新连接</string>
+    <string name="action_settings">设置</string>
+    <string name="action_close">关闭</string>
+
+    <string name="loading">加载中…</string>
     <string name="unavailable">不可用</string>
+    <string name="search_apps">搜索应用</string>
+    <string name="search_languages">搜索语言</string>
+    <string name="system_default">系统默认</string>
+    <string name="app_language">应用语言</string>
+    <string name="current_language">当前：%1$s</string>
+    <string name="label_system">系统</string>
+    <string name="label_modified">已修改</string>
+    <string name="label_user">用户</string>
+
+    <string name="filter_system">系统应用</string>
+    <string name="filter_modified">仅已修改</string>
+    <string name="section_recent">最近使用</string>
+    <string name="section_all_apps">全部应用</string>
+    <string name="section_system_default">系统默认</string>
+    <string name="section_suggested">推荐</string>
+    <string name="section_pinned">已置顶</string>
+    <string name="section_all_languages">全部语言</string>
+
+    <string name="no_apps_title">没有应用</string>
+    <string name="no_apps_message">当前筛选条件下没有已安装的应用。</string>
+    <string name="no_search_results_title">无匹配结果</string>
+    <string name="no_search_results_message">试试其他应用名或包名。</string>
+    <string name="no_languages_title">没有语言</string>
+    <string name="no_languages_message">当前搜索条件下没有语言。</string>
+    <string name="app_not_found">该应用已被卸载。</string>
+    <string name="error_service_unavailable">服务不可用</string>
+
+    <string name="snackbar_language_set">已设置为 %1$s</string>
+    <string name="snackbar_language_reset">已恢复系统默认</string>
+    <string name="snackbar_pinned">%1$s 已置顶</string>
+    <string name="snackbar_unpinned">%1$s 已取消置顶</string>
+    <string name="snackbar_error">操作失败：%1$s</string>
     <string name="warning">警告</string>
-    <string name="warning_system_apps">不建议对系统应用选择语言,你确定?</string>
-    <string name="cancel">取消</string>
+    <string name="warning_system_apps">修改系统应用的语言可能导致异常行为，确定继续吗？</string>
+    <string name="warning_unsupported">该应用可能不支持所选语言。</string>
+
+    <string name="permissions_required">需要权限</string>
+    <string name="shizuku_required">该应用需要 Shizuku 才能修改其他应用的语言。请安装并启动 Shizuku，然后授予本应用权限。</string>
+    <string name="shizuku_not_installed_title">未安装 Shizuku</string>
+    <string name="shizuku_not_installed_message">请安装 Shizuku，启动后回到此页面。</string>
+    <string name="shizuku_not_running_title">Shizuku 未运行</string>
+    <string name="shizuku_not_running_message">请在 Shizuku 应用中启动，或通过 ADB 启动后点击重试。</string>
+    <string name="shizuku_permission_title">需要授权</string>
+    <string name="shizuku_permission_message">请在 Shizuku 中授予 Language Selector 权限，以管理应用语言。</string>
+    <string name="service_connecting">正在连接…</string>
+    <string name="service_ready_shizuku">已通过 Shizuku 连接</string>
+    <string name="service_ready_root">已通过 Root 连接</string>
+    <string name="service_failed">服务连接失败：%1$s</string>
+    <string name="service_open_shizuku">打开 Shizuku</string>
+    <string name="service_start_adb">通过 ADB 启动</string>
+    <string name="service_use_root">使用 Root</string>
+    <string name="service_use_root_hint">检测到 Root 权限，可以代替 Shizuku 使用。</string>
+    <string name="service_root_denied">未获得 Root 权限。</string>
+    <string name="service_steps_title">设置步骤</string>
+    <string name="service_step_install">1. 安装并启动 Shizuku</string>
+    <string name="service_step_grant">2. 授予 Language Selector 权限</string>
+    <string name="service_step_adb">或通过 ADB 启动 Shizuku（adb shell sh /sdcard/Android/data/moe.shizuku.privileged.api/start.sh）</string>
+    <string name="service_browse_only">仅浏览应用，不修改语言</string>
+    <string name="service_status">服务状态</string>
+
+    <string name="about">关于</string>
+    <string name="version">版本 %1$s (%2$d)</string>
+    <string name="ghrepo">GitHub 仓库</string>
+    <string name="view_source">查看源码</string>
+    <string name="deps_libs">依赖库</string>
+    <string name="app">应用</string>
+
+    <string name="theme">主题</string>
+    <string name="theme_system">跟随系统</string>
+    <string name="theme_light">浅色</string>
+    <string name="theme_dark">深色</string>
+    <string name="dynamic_color">动态取色</string>
+    <string name="dynamic_color_desc">在 Android 12+ 上使用壁纸颜色</string>
+
+    <string name="cd_app_icon">%1$s 图标</string>
+    <string name="cd_back">返回</string>
+    <string name="cd_more">更多选项</string>
+    <string name="cd_search">搜索</string>
+    <string name="cd_clear_search">清除搜索</string>
+    <string name="cd_pin">置顶 %1$s</string>
+    <string name="cd_unpin">取消置顶 %1$s</string>
+    <string name="cd_selected">已选中</string>
+    <string name="cd_app_list">应用列表</string>
+    <string name="cd_detail_pane">应用详情</string>
+    <string name="cd_app_icon_image">应用图标</string>
+
+    <string name="search">搜索应用</string>
 </resources>
