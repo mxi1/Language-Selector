@@ -20,6 +20,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -184,7 +187,12 @@ private fun DetailBody(
     val pinnedOptions = state.pinnedOptions
     val groups = state.filteredGroups
 
-    LazyColumn(modifier = contentModifier) {
+    // Draw edge-to-edge behind the transparent navigation bar; pad only the scrollable content.
+    val navigationBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    LazyColumn(
+        modifier = contentModifier,
+        contentPadding = PaddingValues(bottom = navigationBarBottom + 16.dp),
+    ) {
         item(key = "header") {
             AppHeader(app = app, state = state)
         }

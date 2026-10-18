@@ -91,7 +91,7 @@ Get-FileHash app/build/outputs/apk/debug/app-debug.apk, app/build/outputs/apk/re
 
 | 产物 | 大小 (bytes) | 生成时间 | SHA256 |
 | --- | --- | --- | --- |
-| `app-release.apk`（2.0.1，真机修复后最终） | 7,286,388（6.95 MB） | 2026-10-18 17:57:51 | `BF27262758AA57B9579AADC8D2A20D0A4746EEB8773400BB68C288A2C301CCBA` |
+| `app-release.apk`（2.0.1，真机修复后最终） | 7,286,388（6.95 MB） | 2026-10-18 18:20:05 | `C155AA4399F96878D961DF15514B3608F54444B0ACCD0592231E83305C29B130` |
 | `app-debug.apk`（2.0.1） | 66,792,149（63.70 MB） | 2026-10-18 18:08:25 | 见本机构建输出 |
 
 历史产物（对照用，**不可**作为最终交付证据）：
@@ -652,6 +652,7 @@ Select-String -Path "$env:TEMP\ls-qa-release-dex-packages.txt" `
 | D-3 | 字体 200% 时“已修改”竖排、应用名被行尾当前语言挤成省略号 | badge 未限制单行；行尾语言标签按固有宽度占位 | badge 单行 + chip 背景；`fontScale > 1.4` 时隐藏行尾标签、把当前语言显示为 badge | 200% 截图 badge 不竖排、Bitwarden 名称完整 |
 | D-4 | 冷启动偶发不显示“最近使用” | `recentApps = history.map { find(pkg) }`，history 先于 App 列表到达时 find 为空，且之后不会重算 | `combine(historyStore.recentPackages, appCatalog.apps)` 按当前快照解析 | 冷启动 ×5 均有“最近使用” |
 | D-5 | 冷启动偶发所有行缺少“已修改/当前语言” | Home 首次 refresh 在 ServiceManager 就绪前执行，locale 查询失败后不再重试 | 观察 `ServiceStatus.Ready` 后重新刷新 locale states | 冷启动截图 badge/当前语言正常 |
+| D-6 | 主界面底部系统导航栏区域未沉浸：列表视口停在导航栏上方，底部露出一条独立背景/白条，滑动时内容不进入手势条区域（详情页同样） | HomeScreen 根部对整列使用 `navigationBarsPadding()`，把列表视口整体抬到导航栏上方；Detail 的 LazyColumn 缺少导航栏 bottom inset | MainActivity 显式 `enableEdgeToEdge(透明 scrims)` + `isNavigationBarContrastEnforced=false`；Home 去掉根部 nav padding，改为 LazyColumn `contentPadding` 追加 navigationBars 高度；Detail LazyColumn 同样处理，列表可滚动到手势条下方 | 首页/详情滑动到底部时内容延伸到手势条区域，无独立白条；浅色/深色均通过 |
 
 ### 9.2 通过项
 
@@ -660,6 +661,7 @@ Select-String -Path "$env:TEMP\ls-qa-release-dex-packages.txt" `
 - 首页：完整列表、最近使用、系统应用/仅已修改过滤、搜索输入与空结果、清除；详情：推荐/全部语言分组展开/置顶星标/系统默认/打开/强制停止/应用设置。
 - 自适应：横屏 2608×1200@480（≈869dp）自动双栏（列表+详情），旋转后选中应用保留；竖屏 411dp 单栏。
 - 深色模式、字体 200% 布局（修复后）通过目视检查。
+- 边到边沉浸（修复后）：主界面与详情页列表滚动时延伸到透明导航栏/手势条下方，底部不再出现独立背景条带（浅色/深色均验证）。
 - QS Tile：`cmd statusbar add-tile` 后 SystemUI 已绑定 `LocaleTileService`（`dumpsys activity services` 可见 ServiceRecord + ConnectionRecord）；HyperOS 的 QS pager 未直接显示，需用户在编辑界面手动添加，服务注册本身通过。
 - 性能（release）：冷启动 5 次 `TotalTime` = 104/90/93/83/97 ms，中位数 **93 ms**；gfxinfo 48 帧 **Janky 0.00%**（legacy 8.33%）、95th 8ms、99th 17ms；进程 PSS ≈ 100 MB（含 Graphics 27 MB）。
 - 稳定性：修复后无新增 crash/ANR（`dumpsys activity exit-info` 最新为 USER REQUESTED / FORCE STOP）。
@@ -676,4 +678,4 @@ Select-String -Path "$env:TEMP\ls-qa-release-dex-packages.txt" `
 
 ### 9.4 证据截图（`captures/`，不纳入 git）
 
-`device_01_launch.png`（旧版启动崩溃前的系统状态）、`device_02_after_migration.png`、`device_03_home.png`（首页）、`device_04_detail.png`（Bitwarden 详情）、`device_05_set_zh.png`（设置为中文 + Undo Snackbar）、`device_06_bitwarden_zh.png`（FLAG_SECURE 黑屏）、`device_07_reset.png`/`device_08_reset_ok.png`（重置）、`device_09_home_recent.png`（最近使用 + 已修改徽标）、`device_10_search.png`/`device_13_search2.png`/`device_14_search_ok.png`（搜索/IME）、`device_11_system_filter.png`（系统应用过滤）、`device_12_modified_filter.png`（仅已修改）、`device_16_landscape.png`（横屏双栏）、`device_17_font200.png`→`device_22_font200_final.png`（字体 200% 修复前后）、`device_18_dark.png`→`device_19_dark_fixed.png`（深色修复前后）、`device_23_qs_tile.png`（QS 面板）。
+`device_01_launch.png`（旧版启动崩溃前的系统状态）、`device_02_after_migration.png`、`device_03_home.png`（首页）、`device_04_detail.png`（Bitwarden 详情）、`device_05_set_zh.png`（设置为中文 + Undo Snackbar）、`device_06_bitwarden_zh.png`（FLAG_SECURE 黑屏）、`device_07_reset.png`/`device_08_reset_ok.png`（重置）、`device_09_home_recent.png`（最近使用 + 已修改徽标）、`device_10_search.png`/`device_13_search2.png`/`device_14_search_ok.png`（搜索/IME）、`device_11_system_filter.png`（系统应用过滤）、`device_12_modified_filter.png`（仅已修改）、`device_16_landscape.png`（横屏双栏）、`device_17_font200.png`→`device_22_font200_final.png`（字体 200% 修复前后）、`device_18_dark.png`→`device_19_dark_fixed.png`（深色修复前后）、`device_23_qs_tile.png`（QS 面板）、`issue_bottom_light.png`/`issue_bottom_light_fixed2.png`（底部未沉浸 → 修复）、`fix_immersive_home.png`/`fix_immersive_detail.png`（修复后列表延伸到手势条下方）。
