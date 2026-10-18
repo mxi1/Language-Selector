@@ -60,6 +60,7 @@ class ServiceManager @Inject constructor(
 
     private val scope = CoroutineScope(SupervisorJob() + dispatchers.main)
     private val binderMutex = Mutex()
+    private val rootAccessMutex = Mutex()
 
     @Volatile
     private var referenceCount: Int = 0
@@ -81,6 +82,10 @@ class ServiceManager @Inject constructor(
 
     @Volatile
     private var connecting: Boolean = false
+
+    /** Guards against showing the su dialog more than once per "Use Root" activation. */
+    @Volatile
+    private var rootPromptAttempted: Boolean = false
 
     private var connectTimeoutJob: Job? = null
 
@@ -137,15 +142,18 @@ class ServiceManager @Inject constructor(
     override fun refresh() {
         launchSafe {
             if (service != null && _status.value is ServiceStatus.Ready) return@launchSafe
+            if (prefersRoot()) {
+                updateStatus(ServiceStatus.Connecting)
+                if (!ensureRootAccess(allowPrompt = true)) {
+                    updateStatus(ServiceStatus.Failed(ServiceFailure.ROOT_DENIED, ROOT_DENIED_DETAIL))
+                    return@launchSafe
+                }
+            }
             if (referenceCount > 0) {
                 connect()
                 return@launchSafe
             }
-            val problem = if (prefersRoot() && isRootGranted()) {
-                null
-            } else {
-                probeShizuku()
-            }
+            val problem = if (prefersRoot()) null else probeShizuku()
             updateStatus(problem ?: ServiceStatus.Checking)
         }
     }
@@ -263,9 +271,16 @@ class ServiceManager @Inject constructor(
 
     /** Returns the backend to use or updates [status] and returns `null` on failure. */
     private suspend fun resolveBackend(): OperationMode? {
-        if (prefersRoot() && isRootGranted()) {
-            Log.d(TAG, "Connecting through root")
-            return OperationMode.ROOT
+        if (prefersRoot()) {
+            // Binding only: the interactive su prompt is only triggered from refresh(), so a
+            // reconnect (binder death, root setting change, ...) never pops it unexpectedly.
+            if (ensureRootAccess(allowPrompt = false)) {
+                Log.d(TAG, "Connecting through root")
+                return OperationMode.ROOT
+            }
+            Log.w(TAG, "Root was requested but is not granted")
+            updateStatus(ServiceStatus.Failed(ServiceFailure.ROOT_DENIED, ROOT_DENIED_DETAIL))
+            return null
         }
         val problem = probeShizuku()
         if (problem != null) {
@@ -472,8 +487,13 @@ class ServiceManager @Inject constructor(
             settingsStore.useRoot.drop(1).collect {
                 if (referenceCount > 0) {
                     Log.d(TAG, "Root setting changed, reconnecting")
+                    // Give the user a fresh chance to answer the su dialog for the new choice.
+                    rootPromptAttempted = false
                     releaseBinding(unbind = true)
-                    connect()
+                    updateStatus(ServiceStatus.Checking)
+                    // refresh() drives the interactive root request when the user just
+                    // switched "Use Root" on, so the su dialog is shown exactly once here.
+                    refresh()
                 }
             }
         }
@@ -484,8 +504,39 @@ class ServiceManager @Inject constructor(
     private fun isShizukuUsable(): Boolean =
         runCatching { Shizuku.pingBinder() }.getOrDefault(false)
 
-    private suspend fun isRootGranted(): Boolean = withContext(dispatchers.io) {
-        runCatching { Shell.isAppGrantedRoot() == true }.getOrDefault(false)
+    /**
+     * Makes sure root access is available for the root backend.
+     *
+     * When [allowPrompt] is `true` and libsu has not confirmed root yet, this asks the root
+     * manager for access by calling [Shell.getShell] on an IO thread (libsu tries `su`, which
+     * is what makes Magisk/KernelSU show the authorization dialog, and falls back to a
+     * non-root `sh` when denied). The UI-facing [refresh] passes `allowPrompt = true`, while
+     * reconnects pass `false` so no prompt is ever popped behind the user's back.
+     *
+     * The prompt is never triggered while a backend is already connected (in particular not
+     * in `Ready(SHIZUKU)`), and concurrent calls are serialised so only one dialog appears.
+     */
+    private suspend fun ensureRootAccess(allowPrompt: Boolean): Boolean {
+        if (!prefersRoot()) return false
+        if (Shell.isAppGrantedRoot() == true) return true
+        if (!allowPrompt) return false
+        if (_status.value is ServiceStatus.Ready) return false
+        return rootAccessMutex.withLock {
+            // A concurrent caller may have finished the prompt while we were waiting for the
+            // lock: re-check the confirmed state first, and never open a second dialog.
+            if (Shell.isAppGrantedRoot() == true) return@withLock true
+            if (rootPromptAttempted) return@withLock false
+            rootPromptAttempted = true
+            Log.d(TAG, "Asking the root manager for root access")
+            val granted = withContext(dispatchers.io) {
+                // Triggers the su authorization dialog; a non-root fallback shell is fine,
+                // the confirmed state is what matters below.
+                runCatching { Shell.getShell() }
+                Shell.isAppGrantedRoot() == true
+            }
+            Log.d(TAG, "Root access granted: $granted")
+            granted
+        }
     }
 
     /**
@@ -549,5 +600,6 @@ class ServiceManager @Inject constructor(
         private const val CONNECT_TIMEOUT_MS = 10_000L
         private const val SERVICE_VERIFY_TIMEOUT_MS = 5_000L
         private const val SHIZUKU_PACKAGE = "moe.shizuku.privileged.api"
+        private const val ROOT_DENIED_DETAIL = "Root access was not granted"
     }
 }

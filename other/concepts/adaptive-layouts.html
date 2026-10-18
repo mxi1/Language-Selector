@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<style>
+  :root{
+    --bg:#F3F7F2; --card:#FFFFFF; --ink:#1B2620; --muted:#5C6B61;
+    --line:#D7E2D8; --line-strong:#B9C9BC; --primary:#2F6B4F;
+    --primary-soft:#E3F0E8; --primary-ink:#1D4A36; --blue:#3B6470;
+    --blue-soft:#E4EEF2; --warn:#B0522F; --warn-soft:#F9E7DF;
+    --shadow:0 18px 40px rgba(27,42,32,.08);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    width:2800px;height:1800px;background:
+      radial-gradient(1200px 600px at 8% -10%, #EAF3EA 0%, rgba(234,243,234,0) 60%),
+      radial-gradient(1000px 500px at 100% 0%, #E8F0F2 0%, rgba(232,240,242,0) 55%),
+      var(--bg);
+    font-family:"Segoe UI","Microsoft YaHei",system-ui,sans-serif;color:var(--ink);
+    padding:46px 56px 34px;
+  }
+  header{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:26px}
+  h1{margin:0;font-size:40px;letter-spacing:-.5px}
+  .sub{margin-top:8px;font-size:17px;color:var(--muted)}
+  .legend{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;max-width:1050px}
+  .tag{font-size:14px;padding:7px 14px;border-radius:999px;background:#fff;border:1px solid var(--line);color:var(--muted)}
+  .tag b{color:var(--primary);font-weight:600}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:26px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:26px;box-shadow:var(--shadow);
+        padding:22px 22px 18px;display:flex;flex-direction:column;height:720px;overflow:hidden}
+  .card-top{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px}
+  .card h2{margin:0;font-size:22px}
+  .card .dims{font-size:13px;color:var(--primary);background:var(--primary-soft);padding:4px 10px;border-radius:999px;white-space:nowrap}
+  .stage{flex:1;display:flex;align-items:center;justify-content:center;gap:22px}
+  .caption{margin-top:14px;font-size:14px;line-height:1.55;color:var(--muted);min-height:66px}
+  .caption b{color:var(--ink)}
+
+  /* ---------- device chrome ---------- */
+  .phone,.tablet,.dual{border-radius:26px;border:7px solid #233229;background:#FBFDFB;box-shadow:0 10px 24px rgba(27,42,32,.16);overflow:hidden;position:relative;display:flex;flex-direction:column}
+  .phone{width:286px;height:552px}
+  .tablet{width:640px;height:404px}
+  .dual{width:700px;height:410px}
+  .statusbar{height:20px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;color:#9AA79D;font-size:9px}
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:6px 14px 8px}
+  .topbar .title{font-size:17px;font-weight:600}
+  .topbar .back{font-size:15px;color:var(--primary)}
+  .dots{color:#7C8A80;font-size:14px;letter-spacing:1px}
+
+  /* ---------- wireframe primitives ---------- */
+  .search{height:38px;border:1px solid var(--line);background:#EFF4EF;border-radius:999px;display:flex;align-items:center;gap:8px;padding:0 14px;color:#8B998F;font-size:11px;margin:0 14px}
+  .search .mag{width:12px;height:12px;border:2px solid #8B998F;border-radius:50%;position:relative}
+  .search .mag:after{content:"";position:absolute;width:5px;height:2px;background:#8B998F;transform:rotate(45deg);right:-4px;bottom:-1px}
+  .chips{display:flex;gap:8px;padding:10px 14px 4px}
+  .chip{font-size:10px;border:1px solid var(--line-strong);border-radius:999px;padding:5px 10px;color:var(--muted)}
+  .chip.on{background:var(--primary-soft);border-color:#BBD8C6;color:var(--primary-ink);font-weight:600}
+  .section{font-size:10px;font-weight:700;letter-spacing:.6px;color:var(--primary);padding:10px 16px 5px}
+  .letter{font-size:9px;color:#93A297;padding:6px 16px 2px;border-bottom:1px solid #EDF2ED}
+  .row{display:flex;align-items:center;gap:10px;padding:7px 14px;border-bottom:1px solid #F0F4F0}
+  .sq{width:28px;height:28px;border-radius:9px;background:#DCE7DE;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:11px;color:#8F9F93}
+  .sq.blue{background:#DCE8F2;color:#5E7E8E}
+  .sq.green{background:#D9EBDD;color:#4E7A5D}
+  .lines{flex:1;min-width:0}
+  .l1{height:9px;border-radius:5px;background:#3E4C43;opacity:.82;width:62%}
+  .l2{height:7px;border-radius:4px;background:#C9D4CB;width:82%;margin-top:5px}
+  .badge{font-size:8px;padding:2px 6px;border-radius:6px;background:#EDF2ED;color:#6A7A6E;margin-top:5px;display:inline-block}
+  .chev{color:#A9B6AC;font-size:13px}
+
+  /* ---------- compact detail ---------- */
+  .apphead{display:flex;gap:10px;padding:10px 14px 6px;align-items:center}
+  .avatar{width:42px;height:42px;border-radius:12px;background:#DCE7DE}
+  .appname{font-size:14px;font-weight:700}
+  .pkg{font-size:8.5px;color:#8C9A90;margin-top:2px}
+  .curlang{font-size:9px;color:var(--primary);margin-top:3px;font-weight:600}
+  .actions{display:flex;gap:7px;padding:6px 14px 4px}
+  .action{flex:1;height:30px;border-radius:10px;background:var(--primary-soft);color:var(--primary-ink);font-size:8.5px;display:flex;align-items:center;justify-content:center;gap:4px;font-weight:600}
+  .action.ghost{background:#F1F5F1;color:#94A297;border:1px solid #E3EAE4}
+  .langrow{display:flex;align-items:center;gap:9px;padding:5px 16px}
+  .radio{width:12px;height:12px;border-radius:50%;border:2px solid #AEBBAF;flex:0 0 auto}
+  .radio.on{border-color:var(--primary);background:radial-gradient(circle at center,var(--primary) 0 40%,transparent 45%)}
+  .langrow .name{font-size:10px;flex:1;color:#39463D}
+  .star{font-size:11px;color:#B6C3B8}
+  .grouphdr{display:flex;align-items:center;justify-content:space-between;padding:5px 16px;font-size:10px;color:#39463D;border-bottom:1px solid #F0F4F0}
+  .regions{display:flex;flex-wrap:wrap;gap:5px;padding:5px 16px 8px}
+  .region{font-size:8px;border:1px solid #C9D8CC;border-radius:999px;padding:3px 7px;color:#4C5D51}
+  .region.on{background:var(--primary);border-color:var(--primary);color:#fff}
+
+  /* ---------- panes ---------- */
+  .pane-row{display:flex;flex:1;min-height:0}
+  .listpane{display:flex;flex-direction:column;background:#FBFDFB;border-right:1px solid #E3EAE4;min-width:0}
+  .listpane .topbar .title{font-size:13px}
+  .detailpane{flex:1;display:flex;flex-direction:column;background:#FFFFFF;min-width:0}
+  .detailpane .topbar .title{font-size:13px}
+  .wide-search{margin:0 12px;height:30px}
+  .pane .search{height:30px;margin:0 12px;font-size:9.5px}
+  .pane .chips{padding:8px 12px 0}
+  .pane .chip{font-size:8.5px;padding:4px 8px}
+  .pane .row{padding:5px 12px;gap:8px}
+  .pane .sq{width:22px;height:22px;border-radius:7px}
+  .pane .l1{height:7px}.pane .l2{height:6px;margin-top:4px}
+  .pane .section{font-size:9px;padding:8px 12px 4px}
+  .pane .apphead{padding:8px 12px 2px;gap:8px}
+  .pane .avatar{width:34px;height:34px;border-radius:10px}
+  .pane .appname{font-size:12px}
+  .pane .actions{padding:4px 12px 0;gap:6px}
+  .pane .action{height:26px;font-size:8px;border-radius:8px}
+  .pane .regions{padding:4px 12px 6px}
+  .pane .grouphdr{padding:4px 12px}
+  .pane .langrow{padding:4px 12px}
+  .pane .langrow .name{font-size:9px}
+  .twocol{display:grid;grid-template-columns:1fr 1fr;gap:2px 18px;padding:2px 12px 6px}
+  .twocol .regions{padding:2px 0}
+  .hint{font-size:8.5px;color:#8C9A90;padding:2px 12px 6px}
+
+  /* tabletop / book */
+  .tabletop{width:660px;height:420px;border-radius:26px;border:7px solid #233229;background:#FBFDFB;overflow:hidden;display:flex;flex-direction:column;position:relative}
+  .hinge-h{height:16px;background:repeating-linear-gradient(90deg,#D8E2DA 0 10px,#C6D4C9 10px 20px);border-top:1px solid #B9C9BC;border-bottom:1px solid #B9C9BC;display:flex;align-items:center;justify-content:center;font-size:8px;color:#6C7B70;letter-spacing:1px}
+  .hinge-v{width:16px;background:repeating-linear-gradient(180deg,#D8E2DA 0 10px,#C6D4C9 10px 20px);border-left:1px solid #B9C9BC;border-right:1px solid #B9C9BC;display:flex;align-items:center;justify-content:center;font-size:8px;color:#6B7A6F;writing-mode:vertical-rl;letter-spacing:1px}
+  .pane-half{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+  .pane-half .topbar{padding:4px 12px 5px}
+  .pane-half .topbar .title{font-size:12px}
+  .book{width:700px;height:410px;border-radius:26px;border:7px solid #233229;background:#FBFDFB;overflow:hidden;display:flex;position:relative}
+
+  footer{display:flex;gap:26px;align-items:center;margin-top:24px;font-size:14px;color:var(--muted)}
+  footer .k{display:flex;align-items:center;gap:8px}
+  .swatch{width:16px;height:16px;border-radius:5px;display:inline-block;border:1px solid rgba(0,0,0,.06)}
+  .fine{font-size:12.5px;color:#7E8D82}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Language Selector · 多屏幕形态概念图</h1>
+    <div class="sub">同一套 Compose 内容，按<strong>实际窗口宽度</strong>与<strong>折叠姿态</strong>重排；非屏幕宽度，支持分屏 / 自由窗口 / 桌面窗口。</div>
+  </div>
+  <div class="legend">
+    <span class="tag">断点 <b>&lt;600dp</b> Compact</span>
+    <span class="tag"><b>600–839dp</b> Medium</span>
+    <span class="tag"><b>≥840dp</b> Expanded</span>
+    <span class="tag">铰链检测 <b>WindowInfoTracker</b></span>
+    <span class="tag">字体 2.0 / RTL / 动态取色</span>
+  </div>
+</header>
+
+<div class="grid">
+
+  <!-- 1 compact list -->
+  <div class="card">
+    <div class="card-top"><h2>① Compact · 应用列表</h2><span class="dims">&lt; 600dp</span></div>
+    <div class="stage">
+      <div class="phone">
+        <div class="statusbar"><span>9:41</span><span>▲ ▮▮</span></div>
+        <div class="topbar"><span class="title">Language Selector</span><span class="dots">⋮</span></div>
+        <div class="search"><span class="mag"></span><span>搜索应用</span></div>
+        <div class="chips"><span class="chip on">系统应用</span><span class="chip">仅已修改</span></div>
+        <div class="section">最近使用</div>
+        <div class="row"><div class="sq green">Ch</div><div class="lines"><div class="l1"></div><div class="l2"></div><span class="badge">已修改</span></div><span class="chev">›</span></div>
+        <div class="row"><div class="sq blue">Ca</div><div class="lines"><div class="l1"></div><div class="l2"></div><span class="badge">系统</span></div><span class="chev">›</span></div>
+        <div class="section">全部应用</div>
+        <div class="letter">A</div>
+        <div class="row"><div class="sq">Ad</div><div class="lines"><div class="l1"></div><div class="l2"></div></div><span class="chev">›</span></div>
+        <div class="row"><div class="sq">An</div><div class="lines"><div class="l1"></div><div class="l2"></div></div><span class="chev">›</span></div>
+        <div class="row"><div class="sq">Au</div><div class="lines"><div class="l1"></div><div class="l2"></div></div><span class="chev">›</span></div>
+        <div class="letter">B</div>
+        <div class="row"><div class="sq">Br</div><div class="lines"><div class="l1"></div><div class="l2"></div></div><span class="chev">›</span></div>
+      </div>
+    </div>
+    <div class="caption"><b>单栏列表。</b>搜索 200ms 防抖；按首字母 sticky header；最近使用置顶；行点击进入详情（滑动 + 淡入 260ms），预测性返回。</div>
+  </div>
+
+  <!-- 2 compact detail -->
+  <div class="card">
+    <div class="card-top"><h2>② Compact · 应用语言详情</h2><span class="dims">&lt; 600dp</span></div>
+    <div class="stage">
+      <div class="phone">
+        <div class="statusbar"><span>9:41</span><span>▲ ▮▮</span></div>
+        <div class="topbar"><span class="back">←</span><span class="title" style="font-size:15px">App language</span><span style="width:16px"></span></div>
+        <div class="apphead"><div class="avatar"></div><div><div class="appname">示例应用</div><div class="pkg">com.example.app</div><div class="curlang">当前：系统默认</div></div></div>
+        <div class="actions"><span class="action">↗ 打开</span><span class="action ghost">⏻ 强制停止</span><span class="action">⚙ 设置</span></div>
+        <div class="search" style="margin-top:6px"><span class="mag"></span><span>搜索语言</span></div>
+        <div class="section">系统默认</div>
+        <div class="langrow"><span class="radio on"></span><span class="name">系统默认</span></div>
+        <div class="section">推荐</div>
+        <div class="langrow"><span class="radio"></span><span class="name">中文（中国）</span><span class="star">★</span></div>
+        <div class="langrow"><span class="radio"></span><span class="name">English (United States)</span><span class="star">☆</span></div>
+        <div class="section">置顶</div>
+        <div class="langrow"><span class="radio"></span><span class="name">日本語</span><span class="star">★</span></div>
+        <div class="section">全部语言</div>
+        <div class="grouphdr"><span>Afrikaans</span><span>⌄</span></div>
+        <div class="grouphdr"><span>中文</span><span>⌃</span></div>
+        <div class="regions"><span class="region">中文（中国）</span><span class="region on">中文（台湾）</span><span class="region">中文（香港）</span></div>
+        <div class="grouphdr"><span>English</span><span>⌄</span></div>
+      </div>
+    </div>
+    <div class="caption"><b>语言选择。</b>点击即生效 + Undo Snackbar；系统应用首次修改弹确认；长按/星标置顶；当前语言与置顶同步 QS Tile。</div>
+  </div>
+
+  <!-- 3 medium two-pane -->
+  <div class="card">
+    <div class="card-top"><h2>③ Medium · 双栏</h2><span class="dims">600–839dp</span></div>
+    <div class="stage">
+      <div class="tablet">
+        <div class="statusbar"><span>9:41</span><span>▲ ▮▮</span></div>
+        <div class="pane-row">
+          <div class="listpane" style="width:46%">
+            <div class="topbar"><span class="title">Language Selector</span><span class="dots">⋮</span></div>
+            <div class="search"><span class="mag"></span><span>搜索应用</span></div>
+            <div class="chips"><span class="chip on">系统应用</span><span class="chip">仅已修改</span></div>
+            <div class="section">最近使用</div>
+            <div class="row"><div class="sq green">Ch</div><div class="lines"><div class="l1"></div><div class="l2"></div></div></div>
+            <div class="section">全部应用</div>
+            <div class="letter">A</div>
+            <div class="row" style="background:var(--primary-soft)"><div class="sq green">Ad</div><div class="lines"><div class="l1"></div><div class="l2"></div></div><span class="chev">›</span></div>
+            <div class="row"><div class="sq">An</div><div class="lines"><div class="l1"></div><div class="l2"></div></div></div>
+            <div class="row"><div class="sq">Au</div><div class="lines"><div class="l1"></div><div class="l2"></div></div></div>
+            <div class="row"><div class="sq">Br</div><div class="lines"><div class="l1"></div><div class="l2"></div></div></div>
+          </div>
+          <div class="detailpane">
+            <div class="topbar"><span class="title">App language</span><span></span></div>
+            <div class="apphead"><div class="avatar"></div><div><div class="appname">Ad Privacy</div><div class="pkg">com.google.android.adservices.api</div><div class="curlang">当前：系统默认</div></div></div>
+            <div class="actions"><span class="action">↗ 打开</span><span class="action ghost">⏻ 强制停止</span><span class="action">⚙ 设置</span></div>
+            <div class="search" style="margin-top:4px"><span class="mag"></span><span>搜索语言</span></div>
+            <div class="section">系统默认</div>
+            <div class="langrow"><span class="radio on"></span><span class="name">系统默认</span></div>
+            <div class="section">推荐</div>
+            <div class="langrow"><span class="radio"></span><span class="name">English (United States)</span><span class="star">★</span></div>
+            <div class="section">全部语言</div>
+            <div class="grouphdr"><span>中文</span><span>⌄</span></div>
+            <div class="grouphdr"><span>English</span><span>⌃</span></div>
+            <div class="regions"><span class="region">English (US)</span><span class="region on">English (UK)</span><span class="region">English (HK)</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="caption"><b>列表固定 360dp + 详情自适应。</b>详情无返回按钮；切换应用仅替换右栏（AnimatedContent 200ms）；旋转/分屏不丢选中。</div>
+  </div>
+
+  <!-- 4 expanded -->
+  <div class="card">
+    <div class="card-top"><h2>④ Expanded · 平板 / 桌面窗口</h2><span class="dims">≥ 840dp</span></div>
+    <div class="stage">
+      <div class="dual">
+        <div class="statusbar"><span>9:41</span><span>▲ ▮▮</span></div>
+        <div class="pane-row">
+          <div class="listpane" style="width:38%">
+            <div class="topbar"><span class="title">Language Selector</span><span class="dots">⋮</span></div>
+            <div class="search"><span class="mag"></span><span>搜索应用</span></div>
+            <div class="chips"><span class="chip on">系统应用</span><span class="chip">仅已修改</span></div>
+            <div class="section">最近使用</div>
+            <div class="row"><div class="sq green">Ch</div><div class="lines"><div class="l1"></div><div class="l2"></div></div></div>
+            <div class="section">全部应用</div>
+            <div class="letter">A</div>
+            <div class="row" style="background:var(--primary-soft)"><div class="sq green">Ad</div><div class="lines"><div class="l1"></div><div class="l2"></div></div><span class="chev">›</span></div>
+            <div class="row"><div class="sq">An</div><div class="lines"><div class="l1"></div><div class="l2"></div></div></div>
+            <div class="row"><div class="sq">Au</div><div class="lines"><div class="l1"></div><div class="l2"></div></div></div>
+            <div class="row"><div class="sq">Br</div><div class="lines"><div class="l1"></div><div class="l2"></div></div></div>
+            <div class="row"><div class="sq">Ca</div><div class="lines"><div class="l1"></div><div class="l2"></div></div></div>
+          </div>
+          <div class="detailpane">
+            <div class="topbar"><span class="title">App language</span><span></span></div>
+            <div style="max-width:76%;margin:0 auto;width:100%;display:flex;flex-direction:column;flex:1;min-height:0">
+              <div class="apphead"><div class="avatar"></div><div><div class="appname">Ad Privacy</div><div class="pkg">com.google.android.adservices.api</div><div class="curlang">当前：中文（台湾）</div></div></div>
+              <div class="actions"><span class="action">↗ 打开</span><span class="action ghost">⏻ 强制停止</span><span class="action">⚙ 设置</span></div>
+              <div class="search" style="margin-top:4px"><span class="mag"></span><span>搜索语言</span></div>
+              <div class="section">全部语言</div>
+              <div class="grouphdr"><span>中文</span><span>⌃</span></div>
+              <div class="twocol">
+                <div class="regions"><span class="region">中文（中国）</span><span class="region on">中文（台湾）</span><span class="region">中文（香港）</span></div>
+                <div class="regions"><span class="region">中文（简体）</span><span class="region">中文（繁体）</span><span class="region">中文（新加坡）</span></div>
+              </div>
+              <div class="grouphdr"><span>English</span><span>⌄</span></div>
+              <div class="hint">地区变体在宽屏下自动排成 2–3 列，减少滚动。</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="caption"><b>列表 400dp + 详情限宽居中。</b>地区 chips 多列排布；平板横屏、桌面窗口与分屏同样按窗宽重算。</div>
+  </div>
+
+  <!-- 5 tabletop -->
+  <div class="card">
+    <div class="card-top"><h2>⑤ 折叠 · Tabletop（水平铰链）</h2><span class="dims">半折 / 水平</span></div>
+    <div class="stage">
+      <div class="tabletop">
+        <div class="statusbar"><span>9:41</span><span>▲ ▮▮</span></div>
+        <div class="pane-half" style="flex:.45">
+          <div class="topbar"><span class="title">Language Selector</span><span class="dots">⋮</span></div>
+          <div class="search" style="height:30px"><span class="mag"></span><span>搜索应用</span></div>
+          <div class="chips"><span class="chip on">系统应用</span><span class="chip">仅已修改</span></div>
+          <div class="row"><div class="sq green">Ch</div><div class="lines"><div class="l1"></div><div class="l2"></div></div><span class="chev">›</span></div>
+          <div class="row"><div class="sq blue">Ca</div><div class="lines"><div class="l1"></div><div class="l2"></div></div><span class="chev">›</span></div>
+        </div>
+        <div class="hinge-h">HINGE · 按 bounds 留空</div>
+        <div class="pane-half" style="flex:.55">
+          <div class="topbar"><span class="title">App language</span><span></span></div>
+          <div class="apphead" style="padding-top:0"><div class="avatar" style="width:30px;height:30px"></div><div><div class="appname" style="font-size:11px">Ad Privacy</div><div class="pkg">com.google.android.adservices.api</div><div class="curlang">当前：系统默认</div></div></div>
+          <div class="actions"><span class="action">↗ 打开</span><span class="action ghost">⏻ 强制停止</span><span class="action">⚙ 设置</span></div>
+          <div class="section">全部语言</div>
+          <div class="grouphdr"><span>English</span><span>⌄</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="caption"><b>Tabletop：上下分栏。</b>检测 <code>FoldingFeature</code> 水平分离铰链；按 hinge bounds 预留间隙，内容不落入折痕。</div>
+  </div>
+
+  <!-- 6 book -->
+  <div class="card">
+    <div class="card-top"><h2>⑥ 折叠 · Book（垂直铰链）</h2><span class="dims">半折 / 垂直</span></div>
+    <div class="stage">
+      <div class="book">
+        <div class="listpane" style="width:44%">
+          <div class="statusbar"><span>9:41</span><span>▲ ▮▮</span></div>
+          <div class="topbar"><span class="title">Language Selector</span><span class="dots">⋮</span></div>
+          <div class="search"><span class="mag"></span><span>搜索应用</span></div>
+          <div class="chips"><span class="chip on">系统应用</span><span class="chip">仅已修改</span></div>
+          <div class="row"><div class="sq green">Ch</div><div class="lines"><div class="l1"></div><div class="l2"></div></div><span class="chev">›</span></div>
+          <div class="row"><div class="sq blue">Ca</div><div class="lines"><div class="l1"></div><div class="l2"></div></div><span class="chev">›</span></div>
+          <div class="row"><div class="sq">Ad</div><div class="lines"><div class="l1"></div><div class="l2"></div></div></div>
+          <div class="row"><div class="sq">An</div><div class="lines"><div class="l1"></div><div class="l2"></div></div></div>
+        </div>
+        <div class="hinge-v">HINGE</div>
+        <div class="detailpane" style="width:56%">
+          <div class="statusbar"><span>9:41</span><span>▲ ▮▮</span></div>
+          <div class="topbar"><span class="title">App language</span><span></span></div>
+          <div class="apphead"><div class="avatar"></div><div><div class="appname">Ad Privacy</div><div class="pkg">com.google.android.adservices.api</div><div class="curlang">当前：系统默认</div></div></div>
+          <div class="actions"><span class="action">↗ 打开</span><span class="action ghost">⏻ 强制停止</span><span class="action">⚙ 设置</span></div>
+          <div class="section">全部语言</div>
+          <div class="grouphdr"><span>中文</span><span>⌃</span></div>
+          <div class="regions"><span class="region">中文（中国）</span><span class="region on">中文（台湾）</span></div>
+          <div class="grouphdr"><span>English</span><span>⌄</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="caption"><b>Book：左右分栏。</b>垂直铰链两侧各一栏，铰链间隙用 Spacer 避让；展开后回到 Medium/Expanded 常规双栏。</div>
+  </div>
+
+</div>
+
+<footer>
+  <div class="k"><span class="swatch" style="background:#2F6B4F"></span>Primary #2F6B4F</div>
+  <div class="k"><span class="swatch" style="background:#D1E8D6"></span>Secondary container</div>
+  <div class="k"><span class="swatch" style="background:#BFE9F8"></span>Tertiary</div>
+  <div class="k"><span class="swatch" style="background:#F9E7DF"></span>Error container</div>
+  <div class="fine">所有布局基于同一个 <b>WindowForm(widthClass, posture, hingeGap)</b>；触控目标 ≥48dp；支持字体缩放 2.0 / RTL / 暗色与动态取色。</div>
+</footer>
+</body>
+</html>

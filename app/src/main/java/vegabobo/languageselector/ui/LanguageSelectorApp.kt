@@ -8,6 +8,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.core.tween
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -89,11 +90,17 @@ fun LanguageSelectorApp(
     val twoPane = windowForm.twoPane || windowForm.posture == FoldPosture.TABLETOP
 
     LanguageSelectorTheme(themeMode = themeMode, dynamicColor = dynamicColor) {
+        if (twoPane && showAbout) {
+            // In two-pane mode About lives in the detail pane; back returns to the app list.
+            BackHandler { showAbout = false }
+        }
         Box(modifier = Modifier.fillMaxSize()) {
             when {
                 showOnboarding -> OnboardingScreen(
                     status = serviceStatus,
-                    hasRootOption = true,
+                    hasRootOption = serviceStatus is ServiceStatus.ShizukuNotInstalled ||
+                        serviceStatus is ServiceStatus.ShizukuNotRunning ||
+                        serviceStatus is ServiceStatus.Failed,
                     onRetry = appViewModel::refreshService,
                     onRequestPermission = appViewModel::requestPermission,
                     onOpenShizuku = { openShizuku(context) },
@@ -108,7 +115,10 @@ fun LanguageSelectorApp(
                         HomeScreen(
                             viewModel = homeViewModel,
                             windowWidth = windowForm.width,
-                            onAppClick = { app -> detailViewModel.selectPackage(app.packageName) },
+                            onAppClick = { app ->
+                                showAbout = false
+                                detailViewModel.selectPackage(app.packageName)
+                            },
                             onOpenAbout = { showAbout = true },
                             onOpenServiceStatus = { showServiceDialog = true },
                             snackbarHostState = snackbarHostState,
@@ -133,7 +143,7 @@ fun LanguageSelectorApp(
                             else -> Box(modifier = paneModifier, contentAlignment = Alignment.Center) {
                                 EmptyState(
                                     icon = Icons.Outlined.Info,
-                                    title = stringResource(R.string.cd_detail_pane),
+                                    title = stringResource(R.string.select_app_title),
                                     message = stringResource(R.string.select_app_hint),
                                 )
                             }

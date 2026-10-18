@@ -4,10 +4,8 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -166,18 +164,11 @@ class HomeViewModel @Inject constructor(
         refreshJob = viewModelScope.launch {
             isLoading.value = true
             serviceBannerDismissed.value = false
-            val failure = try {
-                coroutineScope {
-                    launch { appCatalog.refresh() }
-                    launch { localeStates.refresh() }
-                }
-                null
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            } catch (throwable: Throwable) {
-                throwable
-            }
-            if (failure != null) {
+            // The app list must load even in read-only mode (no privileged service yet), so the
+            // two refreshes are isolated from each other instead of cancelling one another.
+            val appFailure = runCatching { appCatalog.refresh() }.exceptionOrNull()
+            runCatching { localeStates.refresh() }
+            if (appFailure != null) {
                 message.value = UiMessage(R.string.error_service_unavailable)
             }
             isLoading.value = false

@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<style>
+  :root{
+    --bg:#F3F7F2; --card:#FFFFFF; --ink:#1B2620; --muted:#5C6B61;
+    --line:#D7E2D8; --line-strong:#B9C9BC; --primary:#2F6B4F;
+    --primary-soft:#E3F0E8; --primary-ink:#1D4A36; --blue:#3B6470;
+    --blue-soft:#E4EEF2; --warn:#B0522F; --warn-soft:#F9E7DF;
+    --shadow:0 18px 40px rgba(27,42,32,.08);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{width:2800px;height:1700px;background:
+      radial-gradient(1200px 600px at 95% -10%, #EAF1F3 0%, rgba(234,241,243,0) 55%),
+      radial-gradient(1000px 500px at 0% 0%, #ECF4EB 0%, rgba(236,244,235,0) 55%),
+      var(--bg);
+    font-family:"Segoe UI","Microsoft YaHei",system-ui,sans-serif;color:var(--ink);padding:46px 56px 32px}
+  header{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:26px}
+  h1{margin:0;font-size:40px;letter-spacing:-.5px}
+  .sub{margin-top:8px;font-size:17px;color:var(--muted)}
+  .legend{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;max-width:1100px}
+  .tag{font-size:14px;padding:7px 14px;border-radius:999px;background:#fff;border:1px solid var(--line);color:var(--muted)}
+  .tag b{color:var(--primary);font-weight:600}
+  .grid{display:grid;grid-template-columns:1.18fr 1.18fr .9fr;grid-template-rows:470px 470px auto;gap:24px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:26px;box-shadow:var(--shadow);padding:22px 24px;overflow:hidden;display:flex;flex-direction:column}
+  .card h2{margin:0 0 4px;font-size:21px}
+  .card .hint{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .grow{flex:1;min-height:0}
+
+  /* state machine */
+  .states{display:flex;flex-direction:column;gap:8px}
+  .state{display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:14px;padding:9px 12px;background:#FBFDFB}
+  .state .ico{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:15px;flex:0 0 auto}
+  .state .t{font-size:13.5px;font-weight:600}
+  .state .d{font-size:11.5px;color:var(--muted);margin-top:1px}
+  .state.ready{border-color:#BBD8C6;background:var(--primary-soft)}
+  .state.warn{border-color:#EFCFC0;background:var(--warn-soft)}
+  .arrow{align-self:center;color:#AEBCB1;font-size:12px;margin:-3px 0 -3px 14px}
+
+  /* language flow */
+  .flow{display:flex;align-items:stretch;gap:14px;margin-top:4px}
+  .step{flex:1;border:1px solid var(--line);border-radius:18px;background:#FBFDFB;padding:14px;display:flex;flex-direction:column;gap:9px}
+  .step .n{font-size:11px;font-weight:700;color:var(--primary);letter-spacing:.8px}
+  .mini{border:1px solid var(--line);border-radius:12px;background:#fff;padding:9px;display:flex;flex-direction:column;gap:6px}
+  .lang-row{display:flex;align-items:center;gap:8px;font-size:11px;color:#39463D}
+  .radio{width:12px;height:12px;border-radius:50%;border:2px solid #AEBBAF}
+  .radio.on{border-color:var(--primary);background:radial-gradient(circle at center,var(--primary) 0 40%,transparent 45%)}
+  .snack{margin-top:auto;background:#252F28;color:#F2F7F3;border-radius:10px;padding:8px 10px;font-size:10.5px;display:flex;justify-content:space-between;align-items:center}
+  .snack b{color:#BDE6C8;font-weight:600}
+  .dialog{border:1px solid var(--line);border-radius:12px;padding:10px;background:#fff;font-size:10.5px;line-height:1.5}
+  .dialog .btns{display:flex;justify-content:flex-end;gap:6px;margin-top:8px;font-size:10px;color:var(--primary);font-weight:600}
+  .note{font-size:11.5px;color:var(--muted);margin-top:auto;line-height:1.5}
+
+  /* QS tile */
+  .tiles{display:flex;flex-direction:column;gap:12px;margin-top:4px}
+  .tile{display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:16px;padding:12px 14px;background:#FBFDFB}
+  .tile .ic{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;flex:0 0 auto}
+  .tile.act .ic{background:var(--primary);color:#fff}
+  .tile.ina .ic{background:#E8EEE9;color:#7C8A80}
+  .tile.una .ic{background:#EFEFEF;color:#A7B0A9}
+  .tile .t{font-size:13px;font-weight:600}
+  .tile .d{font-size:11.5px;color:var(--muted);margin-top:1px}
+  .cycle{display:flex;gap:6px;align-items:center;font-size:11px;color:var(--muted);margin-top:2px}
+  .cycle span{background:#F0F5F1;border:1px solid var(--line);border-radius:999px;padding:3px 8px}
+
+  /* motion table */
+  .mt{width:100%;border-collapse:collapse;font-size:13px}
+  .mt th{text-align:left;font-size:11px;letter-spacing:.6px;color:var(--muted);font-weight:700;border-bottom:1px solid var(--line);padding:6px 8px}
+  .mt td{border-bottom:1px solid #EFF3EF;padding:8px;vertical-align:top}
+  .mt td:first-child{font-weight:600;color:var(--ink)}
+  .mt .val{color:var(--primary);font-weight:600;white-space:nowrap}
+
+  /* perf list */
+  .perf{display:flex;flex-direction:column;gap:10px}
+  .perf .it{display:flex;gap:10px;align-items:flex-start}
+  .perf .dot{width:9px;height:9px;border-radius:50%;background:var(--primary);margin-top:6px;flex:0 0 auto}
+  .perf .t{font-size:13px;font-weight:600}
+  .perf .d{font-size:11.5px;color:var(--muted);margin-top:1px;line-height:1.45}
+  .metric{display:flex;gap:12px;margin-top:12px}
+  .metric .m{flex:1;background:#F4F8F4;border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+  .metric .v{font-size:19px;font-weight:700;color:var(--primary-ink)}
+  .metric .k{font-size:10.5px;color:var(--muted);margin-top:2px}
+
+  /* a11y / edge cases */
+  .cols2{display:grid;grid-template-columns:1fr 1fr;gap:8px 18px}
+  .li{font-size:12.5px;color:#3B4A40;line-height:1.45;display:flex;gap:8px}
+  .li:before{content:"✓";color:var(--primary);font-weight:700}
+  .edge{font-size:12.5px;color:#3B4A40;line-height:1.45;display:flex;gap:8px}
+  .edge:before{content:"!";color:var(--warn);font-weight:700}
+  .span2{grid-column:span 2}
+  footer{display:flex;gap:26px;align-items:center;margin-top:24px;font-size:14px;color:var(--muted)}
+  .fine{font-size:12.5px;color:#7E8D82}
+  code{font-family:"Cascadia Code",Consolas,monospace;font-size:.92em;background:#F0F4F0;border-radius:5px;padding:1px 5px}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Language Selector · 交互与流畅性概念图</h1>
+    <div class="sub">服务状态引导、语言应用与撤销、QS Tile 轮换、动效参数与性能策略；所有状态均由单向数据流驱动。</div>
+  </div>
+  <div class="legend">
+    <span class="tag">状态机 <b>ServiceStatus</b></span>
+    <span class="tag">批量<b> 50 包/次</b></span>
+    <span class="tag">图标 <b>Coil 懒加载</b></span>
+    <span class="tag">主线程 <b>零阻塞</b></span>
+    <span class="tag">预测性返回 / Undo / 触觉</span>
+  </div>
+</header>
+
+<div class="grid">
+
+  <!-- onboarding state machine -->
+  <div class="card">
+    <h2>A · 首次启动与服务状态</h2>
+    <div class="hint">未就绪时显示引导页；可选择“仅浏览”只读模式，随时返回连接。</div>
+    <div class="states">
+      <div class="state"><span class="ico" style="background:#EAF0EC;color:#7C8A80">◌</span><div><div class="t">Checking</div><div class="d">检测 Shizuku 是否安装 / 运行 / 已授权</div></div></div>
+      <div class="arrow">↓</div>
+      <div class="state warn"><span class="ico" style="background:#F4D8CB;color:#9C4A2C">!</span><div><div class="t">Shizuku not installed / not running</div><div class="d">步骤卡片：安装启动 → 授权 → 或 ADB 启动；提供「打开 Shizuku / 重试 / 仅浏览」</div></div></div>
+      <div class="arrow">↓</div>
+      <div class="state warn"><span class="ico" style="background:#F4D8CB;color:#9C4A2C">⛨</span><div><div class="t">Permission required</div><div class="d">请求 Shizuku 授权；授权回调自动推进，无需手动重扫</div></div></div>
+      <div class="arrow">↓</div>
+      <div class="state ready"><span class="ico" style="background:#BFE3CA;color:#1D4A36">✓</span><div><div class="t">Ready · Shizuku / Root</div><div class="d">批量拉取全部应用 locale（1 次 / 50 包），进入列表</div></div></div>
+      <div class="state"><span class="ico" style="background:var(--blue-soft);color:var(--blue)">↺</span><div><div class="t">Failed / Disconnected</div><div class="d">顶部横幅 + 重连；不崩溃、不 ANR（8s 调用超时）</div></div></div>
+    </div>
+  </div>
+
+  <!-- apply language flow -->
+  <div class="card">
+    <h2>B · 选择语言 → 生效 → 撤销</h2>
+    <div class="hint">点击即生效；失败保留旧状态并提示；系统应用首次修改需确认。</div>
+    <div class="flow grow">
+      <div class="step">
+        <div class="n">① 选择</div>
+        <div class="mini">
+          <div class="lang-row"><span class="radio"></span>系统默认</div>
+          <div class="lang-row"><span class="radio on"></span>中文（台湾）</div>
+          <div class="lang-row"><span class="radio"></span>English (UK)</div>
+        </div>
+        <div class="note">语言分组可展开；搜索 200ms 防抖；长按置顶 + 触觉反馈。</div>
+      </div>
+      <div class="step">
+        <div class="n">② 生效</div>
+        <div class="mini">
+          <div class="lang-row"><span class="radio on"></span>中文（台湾）</div>
+          <div class="lang-row" style="color:#8C9A90"><span class="radio"></span>System default</div>
+        </div>
+        <div class="snack"><span>已设置为 中文（台湾）</span><b>撤销</b></div>
+        <div class="note">保存 previousTags；Snackbar「撤销」恢复前一状态；失败 → 错误提示且不更新 UI。</div>
+      </div>
+      <div class="step">
+        <div class="n">③ 系统应用确认</div>
+        <div class="mini">
+          <div class="dialog">修改系统应用的语言可能导致异常行为，确定继续吗？<div class="btns"><span>取消</span><span>继续</span></div></div>
+        </div>
+        <div class="note">每包仅首次提示；确认后记住选择（SharedPreferences）。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- QS tile -->
+  <div class="card">
+    <h2>C · Quick Settings Tile</h2>
+    <div class="hint">轮换「系统默认 + 已置顶语言」，仅对前台应用生效。</div>
+    <div class="tiles grow">
+      <div class="tile act"><span class="ic">中</span><div><div class="t">中文（台湾）</div><div class="d">Ad Privacy · 点击切换下一个</div><div class="cycle"><span>系统默认</span>→<span>中文（台湾）</span>→<span>English</span></div></div></div>
+      <div class="tile ina"><span class="ic">A</span><div><div class="t">System default</div><div class="d">目标应用未设置语言 · STATE_INACTIVE</div></div></div>
+      <div class="tile una"><span class="ic">⊘</span><div><div class="t">Unavailable</div><div class="d">无权限 / 未连接 / 系统应用 / 无可置顶语言</div></div></div>
+      <div class="note">长按提示打开本应用；应用内修改语言后 <code>requestListeningState</code> 同步。</div>
+    </div>
+  </div>
+
+  <!-- motion table -->
+  <div class="card">
+    <h2>D · 动效与反馈参数</h2>
+    <div class="hint">克制、短促、可预测；不做影响滚动性能的重动效。</div>
+    <table class="mt">
+      <tr><th>场景</th><th>动效</th><th>时长 / 曲线</th></tr>
+      <tr><td>Compact 页面转场</td><td>滑入 10% + 淡入；返回反向</td><td class="val">260ms · emphasized</td></tr>
+      <tr><td>双栏切换应用</td><td>详情区 AnimatedContent 淡入 + 轻微位移</td><td class="val">200ms</td></tr>
+      <tr><td>列表重排（已修改上移）</td><td><code>animateItem()</code> 位置动画</td><td class="val">默认 spring</td></tr>
+      <tr><td>语言/地区展开</td><td><code>AnimatedVisibility</code> 展开收起</td><td class="val">180ms</td></tr>
+      <tr><td>搜索展开 / IME</td><td>高度与 inset 平滑过渡</td><td class="val">180ms</td></tr>
+      <tr><td>置顶 / 长按</td><td>触觉反馈 + Snackbar Undo</td><td class="val">LongPress</td></tr>
+      <tr><td>系统返回</td><td>预测性返回（enableOnBackInvokedCallback）</td><td class="val">系统动画</td></tr>
+    </table>
+    <div class="note">过渡动画 ≤300ms；进入详情时列表滚动位置与搜索词保留；返回不重新加载列表。</div>
+  </div>
+
+  <!-- perf -->
+  <div class="card">
+    <h2>E · 流畅性策略</h2>
+    <div class="hint">首屏先出骨架/列表，locale 徽标渐进填充。</div>
+    <div class="perf grow">
+      <div class="it"><span class="dot"></span><div><div class="t">批量 locale 查询</div><div class="d">连接就绪后按 50 包/次调用新增 AIDL 方法，替代每应用 1 次 IPC。</div></div></div>
+      <div class="it"><span class="dot"></span><div><div class="t">图标懒加载</div><div class="d">Coil 自定义 Fetcher 按需加载 + 内存缓存；列表构建不再解码全部图标。</div></div></div>
+      <div class="it"><span class="dot"></span><div><div class="t">主线程零阻塞</div><div class="d">PM / Room / binder 全部在 IO；服务连接为事件驱动，无 20s 轮询。</div></div></div>
+      <div class="it"><span class="dot"></span><div><div class="t">稳定列表</div><div class="d">key = packageName + contentType；过滤/排序在 ViewModel 预计算。</div></div></div>
+      <div class="it"><span class="dot"></span><div><div class="t">搜索防抖</div><div class="d">200ms debounce + Default 调度器；结果可取消。</div></div></div>
+      <div class="metric">
+        <div class="m"><div class="v">≤1.5s</div><div class="k">首屏列表可用（目标）</div></div>
+        <div class="m"><div class="v">1 次</div><div class="k">全量 locale 查询</div></div>
+        <div class="m"><div class="v">0</div><div class="k">主线程 IPC</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- a11y & edge -->
+  <div class="card span2" style="grid-column:span 2">
+    <h2>F · 无障碍、边界与失败恢复</h2>
+    <div class="hint">触控目标 ≥48dp；TalkBack 可完整操作；字体 2.0 / RTL / 暗色不破版。</div>
+    <div class="cols2">
+      <div class="li">语言行提供单选语义与 stateDescription</div>
+      <div class="li">所有图标 / 按钮均有本地化 contentDescription</div>
+      <div class="li">预测性返回 + 双栏返回先清选中再退出</div>
+      <div class="li">RTL：AutoMirrored 图标与 RTL 感知布局</div>
+      <div class="li">字体放大 2.0：头部多行、行高自适应</div>
+      <div class="li">动态取色 + 跟随系统 / 浅色 / 深色</div>
+      <div class="edge">Shizuku 未安装 / 未运行 / 拒绝授权 → 引导页分态提示</div>
+      <div class="edge">binder 死亡 / 绑定失败 → 横幅重连，不崩溃</div>
+      <div class="edge">设置语言失败 → 保留旧状态 + 错误 Snackbar</div>
+      <div class="edge">目标应用被卸载 → 详情页自动返回 + 提示</div>
+      <div class="edge">旧版数据（置顶 / 历史）升级后保留</div>
+      <div class="edge">QS Tile 无权限 / 无置顶 / 系统应用 → UNAVAILABLE</div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <div class="fine">实现对应：<code>core/model/Models.kt</code> 状态定义 · <code>service/ServiceManager.kt</code> 状态机 · <code>ui/adaptive/WindowForm.kt</code> 形态判定 · <code>data/LocaleRepository.kt</code> 批量查询 · <code>ui/home</code> / <code>ui/detail</code> 屏幕。</div>
+</footer>
+</body>
+</html>

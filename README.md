@@ -30,6 +30,16 @@ an optional Root mode is available for devices without Shizuku.
 - Recently used apps, app filters (system / modified) and app search.
 - Root mode as a fallback when Shizuku is not available.
 
+### Design concepts
+
+![Adaptive layouts](other/concepts/adaptive-layouts.png)
+
+![Interaction and motion](other/concepts/interaction-flows.png)
+
+The concept boards above summarise the responsive layout matrix (compact / medium / expanded /
+tabletop / book), the interaction model (apply + undo, system-app confirmation, QS tile states) and the
+motion/performance budget. Editable sources are in `other/concepts/`.
+
 ### Usage
 
 1. Install and start Shizuku, then open Language Selector.
