@@ -84,6 +84,9 @@ app/src/main/java/vegabobo/languageselector/
 
 ### Notes / limitations
 
+- Verified on Android 17 (Xiaomi) with Shizuku 13.6.0; Android 16 is the minimum supported version.
+- Upgrading from the pre-rewrite 1.05 release keeps history, pinned languages and modified-app state
+  (database version 1 is migrated to 2 in place).
 - Only the current Android user is supported (multi-user / work-profile apps are not listed).
 - Changing the language of system apps can cause unexpected behavior; a warning is shown first.
 - Release builds use the debug signing config (personal use). Provide your own keystore for distribution.

@@ -14,8 +14,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -94,7 +96,13 @@ fun LanguageSelectorApp(
             // In two-pane mode About lives in the detail pane; back returns to the app list.
             BackHandler { showAbout = false }
         }
-        Box(modifier = Modifier.fillMaxSize()) {
+        // Surface supplies the themed content color, which is required for text laid out
+        // directly under the theme (Home/Onboarding) to stay readable in dark mode.
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background,
+        ) {
+            Box(modifier = Modifier.fillMaxSize()) {
             when {
                 showOnboarding -> OnboardingScreen(
                     status = serviceStatus,
@@ -167,6 +175,7 @@ fun LanguageSelectorApp(
                     .navigationBarsPadding()
                     .padding(horizontal = 16.dp),
             )
+            }
         }
 
         if (showAbout && !twoPane) {

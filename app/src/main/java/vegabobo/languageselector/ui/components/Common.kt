@@ -1,5 +1,6 @@
 package vegabobo.languageselector.ui.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -89,13 +90,16 @@ fun AppBadge(text: String, modifier: Modifier = Modifier) {
         text = text,
         style = MaterialTheme.typography.labelSmall,
         color = MaterialTheme.colorScheme.onSecondaryContainer,
+        maxLines = 1,
+        softWrap = false,
         modifier = modifier
-            .padding(top = 2.dp)
+            .padding(top = 3.dp)
             .padding(end = 4.dp)
-            .then(
-                Modifier
-                    .padding(horizontal = 2.dp, vertical = 1.dp)
-            ),
+            .background(
+                color = MaterialTheme.colorScheme.secondaryContainer,
+                shape = RoundedCornerShape(6.dp),
+            )
+            .padding(horizontal = 6.dp, vertical = 2.dp),
     )
 }
 

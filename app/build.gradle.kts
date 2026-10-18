@@ -15,8 +15,8 @@ android {
         applicationId = "vegabobo.languageselector"
         minSdk = 36
         targetSdk = 36
-        versionCode = 6
-        versionName = "2.0.0"
+        versionCode = 7
+        versionName = "2.0.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -111,3 +111,4 @@ dependencies {
 
     compileOnly(project(":hidden_api"))
 }
+

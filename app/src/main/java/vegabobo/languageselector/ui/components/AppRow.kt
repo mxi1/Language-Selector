@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
@@ -19,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -42,6 +44,10 @@ fun AppRow(
     } else {
         MaterialTheme.colorScheme.surface
     }
+    // At very large font scales the trailing language label would squeeze the app name into an
+    // ellipsis; show the current language as a badge under the package name instead.
+    val showTrailingLocale = localeState?.isModified == true && LocalDensity.current.fontScale <= 1.4f
+    val currentTag = localeState?.primaryTag
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -79,16 +85,21 @@ fun AppRow(
                 if (localeState?.isModified == true) {
                     AppBadge(text = stringResource(R.string.label_modified))
                 }
+                if (!showTrailingLocale && currentTag != null) {
+                    AppBadge(text = localeDisplayName(currentTag))
+                }
             }
         }
-        if (localeState?.isModified == true) {
-            localeState.primaryTag?.let { tag ->
+        if (showTrailingLocale) {
+            currentTag?.let { tag ->
                 Spacer(Modifier.width(8.dp))
                 Text(
                     text = localeDisplayName(tag),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary,
                     maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.widthIn(max = 140.dp),
                 )
             }
         }

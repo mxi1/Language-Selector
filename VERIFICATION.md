@@ -19,7 +19,7 @@
 ## 0. 结论 / 状态
 
 **状态：验证完成 ✅（运行 #1：2026-10-18 11:09；修复后复验运行 #2：11:16。HEAD `f7e211b` + 2 处冻结修复，两次运行 tree-hash 均前后一致）。**
-**结论：5 个任务全绿 —— compile / test（76 tests）/ lint（0 Error）/ assembleDebug / assembleRelease；APK 已用最终源码重建。真机验收按用户要求 Deferred to real device。**
+**结论：5 个任务全绿 —— compile / test（76 tests）/ lint（0 Error）/ assembleDebug / assembleRelease；APK 已用最终源码重建。真机验收已于 2026-10-18 在 Xiaomi 2509FPN0BC（Android 17）上执行，发现并修复 5 个真机问题（见 §9），修复后版本 2.0.1 全绿。**
 
 验证结论（最终，运行 #2，2026-10-18 11:16）：
 
@@ -91,16 +91,18 @@ Get-FileHash app/build/outputs/apk/debug/app-debug.apk, app/build/outputs/apk/re
 
 | 产物 | 大小 (bytes) | 生成时间 | SHA256 |
 | --- | --- | --- | --- |
-| `app-debug.apk` | 68,029,245（64.88 MB） | 2026-10-18 11:18:56 | `DE81ADCE84DE03A6F035D10312B0EBA8939FC80B8776F002FBAA4CB9982D47FC` |
-| `app-release.apk` | 7,270,004（6.93 MB） | 2026-10-18 11:19:32 | `24BDD83B9118469238A57493D7E8C561706EF6069CA837BE93C277C1F72A415D` |
+| `app-release.apk`（2.0.1，真机修复后最终） | 7,286,388（6.95 MB） | 2026-10-18 17:57:51 | `BF27262758AA57B9579AADC8D2A20D0A4746EEB8773400BB68C288A2C301CCBA` |
+| `app-debug.apk`（2.0.1） | 66,792,149（63.70 MB） | 2026-10-18 18:08:25 | 见本机构建输出 |
 
 历史产物（对照用，**不可**作为最终交付证据）：
 
 | 产物 | 大小 | 时间 | 说明 |
 | --- | --- | --- | --- |
+| `app-release.apk`（运行 #2，2.0.0） | 7,270,004 bytes | 2026-10-18 11:19:32 | 重写完成版，真机升级 Room 崩溃 → 被 2.0.1 取代（sha `24BDD83B…`） |
+| `app-debug.apk`（运行 #2） | 68,029,245 bytes | 2026-10-18 11:18:56 | 同上（sha `DE81ADCE…`） |
 | `app-debug.apk`（运行 #1） | 68,029,245 bytes | 2026-10-18 11:11:17 | lint 修复前源码构建（sha `30CC1FCF…`）→ 已被运行 #2 取代 |
 | `app-release.apk`（运行 #1） | 7,270,004 bytes | 2026-10-18 11:12:31 | 同上（sha `18741CB8…`）→ 已被运行 #2 取代 |
-| `app-release.apk`（重写前） | 6,917,011 bytes | 2026-03-22 21:11:41 | 旧版本对照（新 release 7.27 MB） |
+| `app-release.apk`（重写前） | 6,917,011 bytes | 2026-03-22 21:11:41 | 旧版本对照（新 release 7.29 MB） |
 | debug APK sha256（更早） | `0640A70E…2988164C` | — | 仅供参考 |
 
 ## 3. 结果矩阵（每次验证运行后填写）
@@ -633,3 +635,45 @@ Select-String -Path "$env:TEMP\ls-qa-release-dex-packages.txt" `
 # 备选（无 apkanalyzer 时）：复制 APK 为 .zip 解包后对每个 classes*.dex 用 dexdump 查 descriptor
 # & "$sdk\build-tools\36.0.0-rc3\dexdump.exe" classes.dex | Select-String 'IUserService|RootUserService'
 ```
+
+---
+
+## 9. 真机验收记录（2026-10-18，Xiaomi 2509FPN0BC / Android 17）
+
+- 设备：Xiaomi 2509FPN0BC（Android 17 / SDK 37，1200×2608 @480dpi ≈ 411dp），Shizuku 13.6.0 以 shell uid 运行，原 App 1.05（versionCode 5）可覆盖升级（同一 debug 签名）。
+- 安装：release `2.0.0(6)` 覆盖安装成功 → 发现 D-1 后升级到 `2.0.1(7)`；最终 release sha `BF272627…301CCBA`（7,286,388 B）。
+
+### 9.1 真机发现并修复的问题（均已包含在 2.0.1）
+
+| ID | 现象 | 根因 | 修复 | 复验 |
+| --- | --- | --- | --- | --- |
+| D-1 | 覆盖升级后启动即崩：`IllegalStateException: Room cannot verify the data integrity` | 旧版 Room 默认表名 `AppInfoEntity`，重写使用 `appinfoentity`，但 DB 版本仍为 1；第一次迁移实现又被 SQLite 表名大小写不敏感坑掉（DROP/CREATE 后 `SELECT FROM AppInfoEntity` 实际读到新建空表） | DB 版本 1→2；`MIGRATION_1_2` 先把源表 `ALTER TABLE ... RENAME` 到临时表，再建规范表并复制数据；替换/异常时 Room 事务回滚，不留半成品 | 旧历史 7 行完整保留（最近使用可见 Gboard/Gemini/YouTube Music 等旧记录），启动无崩溃 |
+| D-2 | 深色模式下列表标题/应用名几乎不可读 | 根 Composable 没有 Surface，`LocalContentColor` 在深色主题下仍为黑色 | root 外层包 `Surface(color = MaterialTheme.colorScheme.background)` | 深色截图文字对比正常 |
+| D-3 | 字体 200% 时“已修改”竖排、应用名被行尾当前语言挤成省略号 | badge 未限制单行；行尾语言标签按固有宽度占位 | badge 单行 + chip 背景；`fontScale > 1.4` 时隐藏行尾标签、把当前语言显示为 badge | 200% 截图 badge 不竖排、Bitwarden 名称完整 |
+| D-4 | 冷启动偶发不显示“最近使用” | `recentApps = history.map { find(pkg) }`，history 先于 App 列表到达时 find 为空，且之后不会重算 | `combine(historyStore.recentPackages, appCatalog.apps)` 按当前快照解析 | 冷启动 ×5 均有“最近使用” |
+| D-5 | 冷启动偶发所有行缺少“已修改/当前语言” | Home 首次 refresh 在 ServiceManager 就绪前执行，locale 查询失败后不再重试 | 观察 `ServiceStatus.Ready` 后重新刷新 locale states | 冷启动截图 badge/当前语言正常 |
+
+### 9.2 通过项
+
+- 升级安装与旧数据兼容（历史、已修改状态可读）；设置页/列表/详情/筛选/强制停止均可用。
+- Shizuku `Ready`；用系统命令独立验证语言设置：`cmd locale get-app-locales` Bitwarden `[] → [zh-CN]（App 内设置）→ []（App 内重置）`，Tasks 同样 `[] → [zh-CN] → []`。
+- 首页：完整列表、最近使用、系统应用/仅已修改过滤、搜索输入与空结果、清除；详情：推荐/全部语言分组展开/置顶星标/系统默认/打开/强制停止/应用设置。
+- 自适应：横屏 2608×1200@480（≈869dp）自动双栏（列表+详情），旋转后选中应用保留；竖屏 411dp 单栏。
+- 深色模式、字体 200% 布局（修复后）通过目视检查。
+- QS Tile：`cmd statusbar add-tile` 后 SystemUI 已绑定 `LocaleTileService`（`dumpsys activity services` 可见 ServiceRecord + ConnectionRecord）；HyperOS 的 QS pager 未直接显示，需用户在编辑界面手动添加，服务注册本身通过。
+- 性能（release）：冷启动 5 次 `TotalTime` = 104/90/93/83/97 ms，中位数 **93 ms**；gfxinfo 48 帧 **Janky 0.00%**（legacy 8.33%）、95th 8ms、99th 17ms；进程 PSS ≈ 100 MB（含 Graphics 27 MB）。
+- 稳定性：修复后无新增 crash/ANR（`dumpsys activity exit-info` 最新为 USER REQUESTED / FORCE STOP）。
+
+### 9.3 未覆盖 / 限制
+
+- Root 模式：设备无 `su`，未测（代码路径保留）。
+- 折叠 tabletop/book、分屏/自由窗口：设备非折叠屏，仅验证横竖屏/窗口宽度切换。
+- RTL 与预测性返回手势：本轮未执行。
+- 搜索文本输入：设备中文 IME 会组词，`adb shell input text` 无法提交拉丁查询；搜索逻辑由 8 个单测 + UI 空态/清除验证覆盖，建议真机手动输入一次。
+- QS Tile 点击切换：HyperOS pager 未显示该 tile，未完成点击验证；建议手动添加磁贴后复测（服务已绑定）。
+- 目标应用语言即时生效：Bitwarden 截图受 FLAG_SECURE 限制（黑屏），实际生效以 `cmd locale` 与 Tasks 的查询结果为准。
+- 测试结束后已恢复：Bitwarden 语言清空、旋转/字体/深色/屏幕超时还原、IME 还原为 Sogou、移除测试用 QS tile。
+
+### 9.4 证据截图（`captures/`，不纳入 git）
+
+`device_01_launch.png`（旧版启动崩溃前的系统状态）、`device_02_after_migration.png`、`device_03_home.png`（首页）、`device_04_detail.png`（Bitwarden 详情）、`device_05_set_zh.png`（设置为中文 + Undo Snackbar）、`device_06_bitwarden_zh.png`（FLAG_SECURE 黑屏）、`device_07_reset.png`/`device_08_reset_ok.png`（重置）、`device_09_home_recent.png`（最近使用 + 已修改徽标）、`device_10_search.png`/`device_13_search2.png`/`device_14_search_ok.png`（搜索/IME）、`device_11_system_filter.png`（系统应用过滤）、`device_12_modified_filter.png`（仅已修改）、`device_16_landscape.png`（横屏双栏）、`device_17_font200.png`→`device_22_font200_final.png`（字体 200% 修复前后）、`device_18_dark.png`→`device_19_dark_fixed.png`（深色修复前后）、`device_23_qs_tile.png`（QS 面板）。

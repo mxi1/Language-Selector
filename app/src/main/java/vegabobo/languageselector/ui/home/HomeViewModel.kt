@@ -12,6 +12,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.stateIn
@@ -27,6 +29,7 @@ import vegabobo.languageselector.core.dispatchers.AppDispatchers
 import vegabobo.languageselector.core.model.AppFilter
 import vegabobo.languageselector.core.model.AppLocaleState
 import vegabobo.languageselector.core.model.AppSummary
+import vegabobo.languageselector.core.model.ServiceStatus
 import vegabobo.languageselector.data.filterAndSort
 import vegabobo.languageselector.data.indexByLetter
 import javax.inject.Inject
@@ -85,9 +88,16 @@ class HomeViewModel @Inject constructor(
         .map { apps -> indexByLetter(apps) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
-    private val recentApps: StateFlow<List<AppSummary>> = historyStore.recentPackages
-        .map { packages -> packages.take(RECENT_LIMIT).mapNotNull(appCatalog::find) }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    private val recentApps: StateFlow<List<AppSummary>> = combine(
+        historyStore.recentPackages,
+        appCatalog.apps,
+    ) { packages, apps ->
+        // Resolve against the current snapshot instead of the mutable index: history may emit
+        // before the first PackageManager refresh finishes (cold start), and would otherwise
+        // stay empty until the user opens another app.
+        val byPackage = apps.associateBy { it.packageName }
+        packages.take(RECENT_LIMIT).mapNotNull { byPackage[it] }
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     /** List-part of the state: everything derived from app/locale/history flows. */
     private data class ListPart(
@@ -156,6 +166,18 @@ class HomeViewModel @Inject constructor(
     init {
         // Kick off the first load without blocking construction.
         refresh()
+        // The privileged service binds asynchronously; reload the locale state as soon as it is
+        // ready (and after reconnects). Otherwise the initial refresh may run too early and the
+        // "modified" badges / current-language labels would stay empty until a manual refresh.
+        viewModelScope.launch {
+            serviceController.status
+                .drop(1)
+                .filter { it is ServiceStatus.Ready }
+                .distinctUntilChanged()
+                .collect {
+                    runCatching { localeStates.refresh() }
+                }
+        }
     }
 
     /** Re-reads installed apps and their locale states; failures surface as a snackbar message. */
