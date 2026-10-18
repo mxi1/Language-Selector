@@ -57,6 +57,10 @@ android {
             isReturnDefaultValues = true
         }
     }
+    lint {
+        // Translations are partial by design: untranslated strings fall back to English.
+        disable += "MissingTranslation"
+    }
 }
 
 aboutLibraries {
@@ -99,6 +103,7 @@ dependencies {
     implementation(libs.androidx.window)
 
     implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
 
     testImplementation(libs.junit)

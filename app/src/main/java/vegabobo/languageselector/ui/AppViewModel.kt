@@ -15,7 +15,7 @@ import javax.inject.Inject
  */
 @HiltViewModel
 class AppViewModel @Inject constructor(
-    settingsStore: SettingsStore,
+    private val settingsStore: SettingsStore,
     private val serviceController: ServiceController,
 ) : ViewModel() {
 
@@ -24,5 +24,12 @@ class AppViewModel @Inject constructor(
     val serviceStatus: StateFlow<ServiceStatus> = serviceController.status
 
     fun refreshService() = serviceController.refresh()
+
     fun requestPermission() = serviceController.requestPermission()
+
+    /** Enables the optional Root fallback and re-checks the service state. */
+    fun useRoot() {
+        settingsStore.setUseRoot(true)
+        serviceController.refresh()
+    }
 }

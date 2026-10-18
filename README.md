@@ -1,56 +1,86 @@
-### Language Selector
+## Language Selector
 
-Language Selector allows users to set individual app languages. It tries to replicates the behavior of the "App languages" feature introduced in Android 13.
+Language Selector sets an individual language for any installed app, replicating the "App languages"
+feature of Android 13+ even on ROMs that do not expose it (for example MIUI). It uses
+[Shizuku](https://shizuku.rikka.app/) to call the system `LocaleManager` service at privileged level;
+an optional Root mode is available for devices without Shizuku.
 
-To use this app:
-- MUST be on Android 13 or higher, there is no compatiblity with older Android versions.
-- MUST have Shizuku.
+> The app does **not** translate other apps. It only sets the locale an app will use. If the target app
+> ships the requested language, it will show it; otherwise the app may ignore the setting.
 
-You can get this app at Releases section.
+### Requirements
 
-<div>
-<img src="https://raw.githubusercontent.com/VegaBobo/Language-Selector/main/other/preview_1.jpg" alt="preview" width="200"/>
-<img src="https://raw.githubusercontent.com/VegaBobo/Language-Selector/main/other/preview_2.jpg" alt="preview" width="200"/>
-</div>
+- Android 16 (API 36) or higher. `minSdk`/`targetSdk` are pinned to 36.
+- Shizuku installed and running (recommended), **or** Root access (Magisk/KernelSU etc.).
+- Language Selector granted Shizuku permission.
 
 ### Features
 
-- Set individual app languages
-- Allows selecting language from any app **
-- Quick change languages with QSTile
+- Set / read / reset per-app locales for user and system apps.
+- Adaptive UI for many screen forms:
+  - phones (portrait and landscape)
+  - foldables: two-pane when unfolded, hinge-aware tabletop/book postures
+  - tablets and desktop windows (medium/expanded width classes)
+  - split screen / freeform multi-window, dynamic font scale and RTL
+- Smooth interaction: lazy icon loading (Coil), one batched locale query for all apps,
+  debounced search, stable list keys, predictive back and lightweight transitions.
+- Language picker with suggested (system) languages, pinned languages and all available
+  languages grouped by language with region variants.
+- Quick Settings tile: cycles the pinned languages for the foreground app.
+- Recently used apps, app filters (system / modified) and app search.
+- Root mode as a fallback when Shizuku is not available.
 
-** Language Selector DOES NOT translate apps, it just specify a locale that will be used by application, if the desired language is supported by the app, it should be displayed as expected.
+### Usage
 
-** Please note that changing locale for unsupported applications and system apps may cause unexpected behavior and is NOT RECOMMENDED.
+1. Install and start Shizuku, then open Language Selector.
+2. Grant Shizuku permission (or choose Root mode).
+3. Pick an app from the list.
+4. Choose "System default", a suggested/pinned language, or any language from the full list.
+5. The new locale is applied immediately; force-stopping the target app is optional.
 
-#### Language availability
+Long-press (or tap the star of) a language to pin it. Pinned languages appear at the top of the
+picker and are available in the Quick Settings tile.
 
-This app parses Locale (java.util.Locale) from Locale.getAvailableLocales(), consequently, numerous locales are present in the app, the language list is huge, if someone want to improve that, feel free to send a PR, because this way is pretty slow and languages aren't filtered accurately.
+### Build
 
-###  Usage
+```powershell
+# JDK 21 is required (Gradle toolchain is pinned to Microsoft JDK 21 in this repo)
+$env:JAVA_HOME = "C:\Program Files\Microsoft\jdk-21.0.12.101-hotspot"
+.\gradlew.bat :app:assembleDebug      # debug APK
+.\gradlew.bat :app:assembleRelease    # minified APK (debug signing config)
+.\gradlew.bat :app:testDebugUnitTest  # unit tests
+.\gradlew.bat :app:lintDebug          # Android lint
+```
 
-Before using this app, you MUST install and start Shizuku, the way this app works makes Shizuku MANDATORY, after that, you should follow this steps:
+### Architecture
 
-1. Install "Language Selector" (check Releases)
-2. Open, grant Shizuku permissions and tap on "Proceed"
-3. Choose a app you want to select it's language.
-4. Select any language from list
-5. That is it?
+```
+app/src/main/java/vegabobo/languageselector/
+├── core/       models, contracts, dispatchers, locale utilities
+├── service/    Shizuku/Root binding, ServiceManager state machine, AIDL user service
+├── data/       app catalog, locale state cache, locale catalog, pinned store, Room history
+├── qs/         Quick Settings tile
+├── di/         Hilt bindings
+└── ui/         Material 3 theme, adaptive scaffold, screens (home/detail/onboarding/about),
+                reusable components
+```
 
-#### Pinning languages
+- `ServiceManager` exposes a `StateFlow<ServiceStatus>` and serializes privileged calls with a mutex
+  and timeouts; the UI never blocks on service discovery.
+- Locale state for all installed apps is fetched in one batched binder call after the service is
+  ready, then updated in place after each change.
+- The UI is driven by immutable state from `ViewModel`s and `StateFlow`s; the layout is chosen from
+  the current window width class plus folding posture (`androidx.window`).
 
-You can pin languages by long-pressing on desired language, pinned languages will appear at the top of the list and will also be available in the QS tile.
+### Notes / limitations
 
-#### Quick tile
+- Only the current Android user is supported (multi-user / work-profile apps are not listed).
+- Changing the language of system apps can cause unexpected behavior; a warning is shown first.
+- Release builds use the debug signing config (personal use). Provide your own keystore for distribution.
+- The `hidden_api` module contains compile-only stubs of the framework classes used through Shizuku;
+  it is not packaged into the APK.
 
-You can quick change current running app language by adding a QS tile, available tile languages are the pinned ones, if no pinned language is set, then tile will be marked as Unavailable, changing system apps language from QS is also not supported.
+### Credits
 
-### Background
-
-I've made this app because MIUI doesn't seem to have app languages in Android 13 (at least on my device, running global MIUI 14/Android 13), by not having the feature, i mean, there is no option inside Settings app to change app languages individually, but since it is as Android 13 build,  there is a high change that locale service is still present, if so, we can use LocaleManager to do per-app basis locale operations.
-
-Locale manager can be acessible via ADB, using "cmd locale" command, since adb has the ability to change other app languages, i've decided to make my own "front-end" for managing application locales, so i can set languages and use this feature, even if there is no UI for app languages in stock Settings app yet.
-
-Since ADB is required to manage other application languages, this app uses Shizuku to interact with LocaleManager APIs at privileged level, that's why Shizuku is mandatory to use this app.
-
-If your device is running Android 13 or higher, and your ROM doesn't include any option related to the app languages, this app may be useful.
+This rewrite is based on the original
+[Language Selector](https://github.com/VegaBobo/Language-Selector) by VegaBobo (Apache-2.0).
