@@ -7,8 +7,10 @@
 | --- | --- |
 | 仓库 | `C:\Users\minjun\Source\Repos\Language-Selector` |
 | 分支 | `rewrite/adaptive` |
-| 当前 HEAD（快照） | `b11f722 feat: scaffold rewrite (contracts, models, theme, components, adaptive window form, DI stubs)` |
-| 快照时间 | 2026-10-18 10:42 +08:00（工作树仍有并行改动：`ui/adaptive/AdaptiveScaffold.kt`、`ui/navigation/ServiceStatusDialog.kt` 未跟踪，`README.md` 已修改） |
+| 当前 HEAD（验证快照） | `f7e211b feat: polish integration, root prompt fix, select-app empty state, design concept boards`（HEAD 未变；工作树含 Lead 的 2 处 lint 修复，已重新冻结） |
+| 验证快照 #1（11:09） | tree-hash `133FA16D0BE498AA36D0BB828D24CF11F539379102264A4C8240D10C12763205`（79 文件）前后一致；lint 有 1 Error |
+| 验证快照 #2（11:16，最终） | tree-hash `6F7CB3F7CDBAD0CEBC592E706DAA4946693B9EF570543ABF34E2FEB50B91F551`（78 文件，PlaceholderHome 已删除）前后一致；**5 个任务全绿** |
+| 最终源码改动（相对 HEAD） | 仅 2 处：`ui/adaptive/WindowForm.kt` +1 行（`@Suppress("ProduceStateDoesNotAssignValue")`）、`ui/navigation/PlaceholderHome.kt` -60 行（删除死代码） |
 | JDK | `C:\Program Files\Microsoft\jdk-21.0.12.101-hotspot`（21.0.12.1 LTS，JAVA_HOME 已生效） |
 | Android SDK | `C:\Users\minjun\AppData\Local\Android\Sdk`（local.properties） |
 | Gradle | wrapper 8.10.2；AGP 8.7.3；Kotlin 2.0.21；KSP 2.0.21-1.0.27 |
@@ -16,21 +18,21 @@
 
 ## 0. 结论 / 状态
 
-**状态：等待 Lead 的 `verify` 指令（准备阶段完成；真机/模拟器验收清单已于 6.x 细化，仍未运行任何 Gradle 构建）。**
+**状态：验证完成 ✅（运行 #1：2026-10-18 11:09；修复后复验运行 #2：11:16。HEAD `f7e211b` + 2 处冻结修复，两次运行 tree-hash 均前后一致）。**
+**结论：5 个任务全绿 —— compile / test（76 tests）/ lint（0 Error）/ assembleDebug / assembleRelease；APK 已用最终源码重建。真机验收按用户要求 Deferred to real device。**
 
-验证结论（每次运行后更新）：
+验证结论（最终，运行 #2，2026-10-18 11:16）：
 
-- [ ] `:app:compileDebugKotlin` — 待运行
-- [ ] `:app:testDebugUnitTest` — 待运行
-- [ ] `:app:lintDebug` — 待运行
-- [ ] `:app:assembleDebug` — 待运行
-- [ ] `:app:assembleRelease` — 待运行
-- [ ] APK 产物检查 — 待运行
-- [ ] 静态检查（硬编码文案 / 主线程阻塞 / Manifest / 资源） — 待运行
-- [ ] 真机验收 — 待运行（依赖集成完成）
+- [x] `:app:compileDebugKotlin` — **SUCCESS**（3.5s）
+- [x] `:app:testDebugUnitTest` — **SUCCESS**（5.2s；10 个测试类 / **76 tests，0 failures，0 errors**）
+- [x] `:app:lintDebug` — **SUCCESS**（18.4s；**0 Error / 85 Warnings**；F-1 已修复并复验）
+- [x] `:app:assembleDebug` — **SUCCESS**（3.4s；APK 68,029,245 B，sha `DE81ADCE…`）
+- [x] `:app:assembleRelease` — **SUCCESS**（36.3s；APK 7,270,004 B，sha `24BDD83B…`）
+- [x] APK 产物检查 — badging 校验通过（package/versionCode 6/versionName 2.0.0/minSdk 36/targetSdk 36）
+- [x] 静态检查 — 硬编码文案 **0**、`runBlocking` **0**、Manifest 组件/权限完整、release 反射类保留（IUserService/UserService/RootUserService）
+- [ ] 真机验收 — **Deferred to real device**（用户要求本轮不做 VM/模拟器验证；§6 清单保留给后续真机执行）
 
-> 声明：本阶段仓库仍处于 **scaffold 阶段**（DI 全部绑定 stub、首页为 `PlaceholderHome`、service/data 层尚未实现）。
-> 构建通过 ≠ 功能完成；真机验收 checklist 中依赖真实 service 层的条目在集成完成前无法判定。
+> 说明：11:05 的并发写入竞态轮次、11:09 的脚本参数错误轮次均已作废（见 §3 备注）。有效运行 2 次：#1（11:09，lint 1 Error）→ Lead 修复（WindowForm 加 Suppress + 删除 PlaceholderHome）→ #2（11:16，全绿）。
 
 ## 1. 构建执行协议
 
@@ -52,8 +54,8 @@
 | # | Gradle task | 主要判据 | 已知常见失败源 |
 | --- | --- | --- | --- |
 | 1 | `:app:compileDebugKotlin` | `BUILD SUCCESSFUL`；无 `e:` 行 | Kotlin 语法/引用、Hilt/KSP 生成、R 类引用 |
-| 2 | `:app:testDebugUnitTest` | `BUILD SUCCESSFUL`；当前预期 **NO-SOURCE**（`app/src/test` 不存在） | 无测试源 → 不产生失败；若之后新增测试则看 `app/build/reports/tests/testDebugUnitTest/index.html` |
-| 3 | `:app:lintDebug` | `BUILD SUCCESSFUL`；`lint-results-debug.html/txt` 中 Error = 0 | **翻译类问题（见 6.4）风险最高**；其余多为 warning |
+| 2 | `:app:testDebugUnitTest` | `BUILD SUCCESSFUL`；`tests > 0` 且 failures=0（读 `app/build/test-results/testDebugUnitTest/*.xml`） | 断言失败、JVM 单测环境缺失 |
+| 3 | `:app:lintDebug` | `BUILD SUCCESSFUL`（= 0 Error）；`lint-results-debug.txt` 只统计 Error | Compose runtime lint（本轮命中 `ProduceStateDoesNotAssignValue`）；翻译类已由 lint{} 关闭 MissingTranslation |
 | 4 | `:app:assembleDebug` | BU + `app-debug.apk` 存在 | 依赖 1、资源链接、manifest merge |
 | 5 | `:app:assembleRelease` | BU + `app-release.apk` 存在 | R8/minify+shrink、missing proguard rules、aboutLibraries 资源 |
 
@@ -83,32 +85,70 @@ Get-FileHash app/build/outputs/apk/debug/app-debug.apk, app/build/outputs/apk/re
 
 可选（有 build-tools 时）：`aapt2 dump badging <apk>` 校验 `package=vegabobo.languageselector`、`versionCode='6'`、`versionName='2.0.0'`、`sdkVersion:'36'`、`targetSdkVersion:'36'`。
 
-### 2.1 基线（陈旧产物，不能作为通过证据）
+### 2.1 产物基线
+
+**最终产物（运行 #2，2026-10-18 11:18–11:19，lint 修复后的最终源码；可作交付/验收证据）：**
+
+| 产物 | 大小 (bytes) | 生成时间 | SHA256 |
+| --- | --- | --- | --- |
+| `app-debug.apk` | 68,029,245（64.88 MB） | 2026-10-18 11:18:56 | `DE81ADCE84DE03A6F035D10312B0EBA8939FC80B8776F002FBAA4CB9982D47FC` |
+| `app-release.apk` | 7,270,004（6.93 MB） | 2026-10-18 11:19:32 | `24BDD83B9118469238A57493D7E8C561706EF6069CA837BE93C277C1F72A415D` |
+
+历史产物（对照用，**不可**作为最终交付证据）：
 
 | 产物 | 大小 | 时间 | 说明 |
 | --- | --- | --- | --- |
-| `app-debug.apk` | 65,950,584 bytes | 2026-10-18 10:39:12 | 早于 HEAD 提交（10:40:07），且当时 `AdaptiveScaffold.kt` / `ServiceStatusDialog.kt` 尚未存在 → **陈旧** |
-| `app-release.apk` | 6,917,011 bytes | 2026-03-22 21:11:41 | 重写前旧版本 → **陈旧**，验证时必须重新生成 |
-| debug APK sha256（旧） | `0640A70EFD16EB8F37A00708AA89282D714162D27ED71C62C2D3A2122988164C` | — | 仅供参考 |
+| `app-debug.apk`（运行 #1） | 68,029,245 bytes | 2026-10-18 11:11:17 | lint 修复前源码构建（sha `30CC1FCF…`）→ 已被运行 #2 取代 |
+| `app-release.apk`（运行 #1） | 7,270,004 bytes | 2026-10-18 11:12:31 | 同上（sha `18741CB8…`）→ 已被运行 #2 取代 |
+| `app-release.apk`（重写前） | 6,917,011 bytes | 2026-03-22 21:11:41 | 旧版本对照（新 release 7.27 MB） |
+| debug APK sha256（更早） | `0640A70E…2988164C` | — | 仅供参考 |
 
 ## 3. 结果矩阵（每次验证运行后填写）
 
-### 运行 #1 — 待执行（Lead 指令后）
+### 运行 #1 — 2026-10-18 11:09:38 起（HEAD f7e211b，代码冻结，tree-hash 前后一致）
 
-| 任务 | 结果（SUCCESS / FAILED / NO-SOURCE） | 耗时 | 关键输出 / 失败摘要（file:line） |
+| 任务 | 结果 | 耗时 | 关键输出 / 失败摘要（file:line） |
 | --- | --- | --- | --- |
-| `:app:compileDebugKotlin` | | | |
-| `:app:testDebugUnitTest` | | | |
-| `:app:lintDebug` | | | |
-| `:app:assembleDebug` | | | |
-| `:app:assembleRelease` | | | |
+| `:app:compileDebugKotlin` | **SUCCESS** | 1.1s | BUILD SUCCESSFUL（27 tasks，8 executed） |
+| `:app:testDebugUnitTest` | **SUCCESS** | 6.4s | **76 tests / 10 classes，0 failures**；报告 `app/build/reports/tests/testDebugUnitTest/index.html` |
+| `:app:lintDebug` | **FAILED** | 11.0s | 1 Error：`app/src/main/java/vegabobo/languageselector/ui/adaptive/WindowForm.kt:52: Error: produceState calls should assign value inside the producer lambda [ProduceStateDoesNotAssignValue from androidx.compose.runtime]`；+ 85 warnings |
+| `:app:assembleDebug` | **SUCCESS** | 2.8s | `app/build/outputs/apk/debug/app-debug.apk` |
+| `:app:assembleRelease` | **SUCCESS** | 54.3s | R8+shrink 通过；`app/build/outputs/apk/release/app-release.apk` |
 
 APK 记录：
 
 | 产物 | 存在 | 大小 (bytes) | 生成时间 | SHA256 |
 | --- | --- | --- | --- | --- |
-| `app-debug.apk` | | | | |
-| `app-release.apk` | | | | |
+| `app-debug.apk` | ✅ | 68,029,245 | 2026-10-18 11:11:17 | `30CC1FCF69C9202485B6F0E74B9C098C9497BDC33FB7D00612262B9203AC7F2F` |
+| `app-release.apk` | ✅ | 7,270,004 | 2026-10-18 11:12:31 | `18741CB835B2444D58FB271E5341EEC275DA50476857E67022B33A9305E57D65` |
+
+`aapt2 dump badging`（release）：`package=vegabobo.languageselector`、`versionCode=6`、`versionName=2.0.0`、`minSdkVersion=36`、`targetSdkVersion=36`、`launchable-activity=vegabobo.languageselector.MainActivity`。
+
+> 运行日志（仓库外）：`$env:TEMP\ls-qa\run-20261018-110948\01…05-*.log`
+> 作废轮次说明：11:05 因并发写入竞态编译失败（见 §0）；11:09 首次批量脚本误写 `:compileDebugKotlin`（漏 `app` 模块前缀）导致 5 个任务秒退 "task not found"，该轮同样作废、未计入矩阵。
+
+### 运行 #2 — 2026-10-18 11:16:58 起（lint 修复后复验，最终源码）
+
+相对 HEAD `f7e211b` 的冻结改动仅 2 处：`ui/adaptive/WindowForm.kt` +1 行（`@Suppress("ProduceStateDoesNotAssignValue")`，注释说明 collect 内赋值的 false positive）、`ui/navigation/PlaceholderHome.kt` -60 行（删除无引用死代码）。tree-hash `6F7CB3F7…91F551`（78 文件）前后一致。
+
+| 任务 | 结果 | 耗时 | 关键输出 |
+| --- | --- | --- | --- |
+| `:app:compileDebugKotlin` | **SUCCESS** | 3.5s | 删除 PlaceholderHome 后无残留引用 |
+| `:app:testDebugUnitTest` | **SUCCESS** | 5.2s | 76 tests / 10 classes，0 failures |
+| `:app:lintDebug` | **SUCCESS ✅** | 18.4s | **0 Error / 85 Warnings**；`ProduceStateDoesNotAssignValue` 命中 0 |
+| `:app:assembleDebug` | **SUCCESS** | 3.4s | APK 68,029,245 B |
+| `:app:assembleRelease` | **SUCCESS** | 36.3s | R8 通过；APK 7,270,004 B；反射类保留复核通过 |
+
+**运行 #2 最终产物（当前磁盘 APK 即最终源码构建，可作交付证据）：**
+
+| 产物 | 大小 (bytes) | 生成时间 | SHA256 |
+| --- | --- | --- | --- |
+| `app-debug.apk` | 68,029,245（64.88 MB） | 2026-10-18 11:18:56 | `DE81ADCE84DE03A6F035D10312B0EBA8939FC80B8776F002FBAA4CB9982D47FC` |
+| `app-release.apk` | 7,270,004（6.93 MB） | 2026-10-18 11:19:32 | `24BDD83B9118469238A57493D7E8C561706EF6069CA837BE93C277C1F72A415D` |
+
+**lint 剩余 85 warnings 明细（以 `lint-results-debug.xml` 权威统计）：** `GradleDependency` 42、`UnusedResources` 29、`AndroidGradlePluginVersion` 6、`IconLocation` 2、`MonochromeLauncherIcon` 2、`ObsoleteSdkInt` 2、`ModifierFactoryExtensionFunction` 1、`ModifierParameter` 1 —— **无 Error，不阻塞交付**。
+
+日志：`$env:TEMP\ls-qa\reverify-20261018-111658\01…02-*.log`、`$env:TEMP\ls-qa\reverify2-20261018-111852\03…05-*.log`。
 
 ## 4. 失败记录模板
 
@@ -124,88 +164,152 @@ APK 记录：
 - 复现：.\gradlew.bat --console=plain <task>
 ```
 
-当前无失败记录（尚未运行构建）。
+### F-1 `:app:lintDebug`（2026-10-18 11:09，运行 #1）
+
+- 原始报错：
+  `app/src/main/java/vegabobo/languageselector/ui/adaptive/WindowForm.kt:52: Error: produceState calls should assign value inside the producer lambda [ProduceStateDoesNotAssignValue from androidx.compose.runtime]`
+- 上下文（`WindowForm.kt:52-57`）：
+  ```kotlin
+  val layoutInfo by produceState<WindowLayoutInfo?>(initialValue = null, activity) {
+      val host = activity ?: return@produceState
+      runCatching {
+          WindowInfoTracker.getOrCreate(host).windowLayoutInfo(host).collect { value = it }
+      }
+  }
+  ```
+- 归类：Compose runtime lint。赋值 `value = it` 位于 `collect{}` 嵌套 lambda，lint 数据流分析看不到"直接赋值"，故判违规；**运行时行为正常**（collect 持续赋值，posture 热更新可用）。
+- 影响：仅阻塞 `:app:lintDebug`；不影响 compile、单测、assembleDebug/assembleRelease（后三者本轮全绿）。
+- 最小修复建议（三选一，qa 不改代码）：
+  1. `rememberWindowForm()` 加 `@Suppress("ProduceStateDoesNotAssignValue")` — 1 行，行为零变化（最小）；
+  2. 顶层直接赋值（如 `value = runCatching { …first() }.getOrNull()`）— 会失去后续 posture 热更新，不推荐；
+  3. 改用 `LaunchedEffect` + `mutableStateOf` / `snapshotFlow` 收集 — 改动稍大但语义最清晰。
+- 复现：`.\gradlew.bat --console=plain :app:lintDebug`（日志 `$env:TEMP\ls-qa\run-20261018-110948\03-lintDebug.log`）
+- 状态：**已修复并复验通过 ✅**（2026-10-18 11:16，Lead 重新冻结代码）
+  - 修复方式：`WindowForm.kt:47` 增加 `@Suppress("ProduceStateDoesNotAssignValue") // false positive: the value is assigned inside collect {}`（+1 行，行为零变化）；
+  - 复验（运行 #2）：`:app:lintDebug` **BUILD SUCCESSFUL**（18.4s），`lint-results-debug.xml` 中 `ProduceStateDoesNotAssignValue` 命中 **0**，Total = **0 Error / 85 Warnings**。
 
 ## 5. 静态检查清单（只读，构建外可先做；构建后复核）
 
-### 5.1 硬编码用户可见文案
+### 5.1 硬编码用户可见文案 — 结论：**0 违规**（死代码已删除）
 
-- [x] 已扫描（快照 b11f722）：Kotlin 侧仅 1 处真实违规
-  - `app/src/main/java/vegabobo/languageselector/ui/navigation/PlaceholderHome.kt:46` — `text = "Service status: $status"`，英文硬编码且直接插值 `ServiceStatus`（会输出 `Ready(mode=SHIZUKU)` 之类的内部类名，非本地化）。属临时占位页，集成时须替换为 `stringResource(...)` + `serviceStatusLabel()`（后者已在 `ServiceStatusDialog.kt` 实现）。
-  - 其余 `Text(...)` 均走 `stringResource(R.string.*)`。
-- [ ] 复核：`.kt` 中 `Text("`、`text = "`、`contentDescription = "` 均为空；XML 布局无硬编码文案（本项目无 layout XML）。
-- 参考命令：`grep -n 'text\s*=\s*"\|Text(\s*"' app/src/main/java -r`
+- 扫描范围：`app/src/main/java/**/*.kt`（62 处 `Text(` 调用、127 处 `stringResource(` 调用）。
+- 结果：
+  - ✅ 所有**实际渲染**的用户可见文案均走 `stringResource(R.string.*)`。`Text(` 形参透传的位置（`Text(title)`、`Text(action)`、`Text(confirmLabel)`、`Text(serviceStatusLabel(...))` 等）已逐一回溯调用点：`DetailScreen.kt:163-170`、`HomeScreen.kt:398-402`、`Common.kt` ConfirmDialog 调用方等均传 `stringResource`。
+  - `Content Description = "…"`、`placeholder = "…"`、`label/title/subtitle/message/supportingText = "…"` 的**引号字面量命中 = 0**。
+  - ✅ `ui/navigation/PlaceholderHome.kt`（唯一硬编码文案来源）已由 Lead 于 11:16 删除；复验确认全仓库无 `PlaceholderHome` 残留引用、编译通过。最终源码硬编码文案 = **0**。
+  - `qs/LocaleTileService.kt:212 targetLabel = ""`：清空状态用的内部默认值，非用户可见文案（实际渲染走 `getString(R.string.*)` / `loadLabel`）。
+- 复核命令：`Text("` 命中 0；`text\s*=\s*"` 命中 0；`Text(` 调用的形参全部回溯到 `stringResource`。结论：**用户可见文案无硬编码**。
 
-### 5.2 主线程阻塞 / 危险 Binder 调用
+### 5.2 主线程阻塞 / 危险 Binder 调用 — 本轮结论：无阻塞调用
 
-- [x] 快照结论：
-  - 图标加载 `ui/components/AppIcon.kt:34` 正确使用 `withContext(Dispatchers.IO)`，`PackageManager.getApplicationInfo` 不在主线程。
-  - `core/dispatchers/AppDispatchers.kt` 显式注入 IO/Default/Main，符合后续 service/data 层要求。
-  - `MainActivity.kt:24` 在 `onCreate` 同步调用 `serviceController.refresh()`；当前 stub 为空实现，但真实实现接入后**禁止**在此做 binder 等待（应 fire-and-forget 到 IO + StateFlow）。列为集成期回归点。
-  - `data/prefs/SharedPrefsSettingsStore.kt:20-30` 在构造时同步读 SharedPreferences（Hilt 单例首次注入发生在主线程）→ 首帧有磁盘读风险；建议后续在 IO 上初始化或接受（Android 首次 getSharedPreferences 为异步加载，通常可接受）。非阻塞项。
-  - 未发现 `runBlocking` / `Thread.sleep` / `getService(...)` 轮询。
-- [ ] 复核：`runBlocking|Thread\.sleep|\.get\(\)` 在 `app/src/main/java` 中为空或均已注释说明用途。
+- ✅ 全仓库 **0 处** `runBlocking` / `Thread.sleep`。
+- ✅ 所有 IPC / PackageManager / 数据库访问均显式切到注入的 `dispatchers.io` / `Dispatchers.IO`：
+  `ServiceManager.kt:223,388,531,546`、`LocaleRepository.kt:47,74,81,88`、`AppRepository.kt:62`、`HistoryRepository.kt:42,57`、`LocaleCatalogRepository.kt:104-121`、`AppIcon.kt:34`、`LocaleTileService.kt:146,176`。
+- ✅ `MainActivity.onCreate` 的 `serviceController.refresh()` → `ServiceManager.refresh()`（:142）内部走 `launchSafe{}` 协程；`acquire()/release()/requestPermission()` 同样 `launchSafe`，**不阻塞主线程**。
+- ✅ UI 层查询/过滤在 `dispatchers.default`（`HomeViewModel.kt:79`），列表/详情 IPC 在 `dispatchers.io`。
+- ⚠️ 轻微（非阻塞）：`ui/about/AboutScreen.kt:55-58` 在 `remember{}` 中同步构建 aboutlibraries 元数据（仅 About 首帧、毫秒级）；若后续变慢再挪到 IO。
+- 结论：无"主线程等 binder"风险。
 
-### 5.3 AndroidManifest 完整性
-
-快照 b11f722 清单：
+### 5.3 AndroidManifest 完整性 — 已用 release APK 合并清单核对（通过）
 
 | 组件 | 类 | 要求 | 状态 |
 | --- | --- | --- | --- |
-| application | `.App` (`@HiltAndroidApp`) | `android:name` 与类全名匹配 | ✅ |
-| activity | `.MainActivity` | `exported=true` + MAIN/LAUNCHER | ✅ |
-| provider | `rikka.shizuku.ShizukuProvider` | authorities `${applicationId}.shizuku`、exported、permission | ✅（Shizuku 标准写法） |
-| service | `.qs.LocaleTileService` | exported、BIND_QUICK_SETTINGS_TILE、`QS_TILE` intent-filter + TOGGLEABLE_TILE meta | ✅（注意：与旧 `QSTile` 的迁移已完成） |
-| 权限 | `QUERY_ALL_PACKAGES` | `tools:ignore="QueryAllPackagesPermission"` | ✅（Play 上架需说明用途） |
-| 属性 | `localeConfig` / `dataExtractionRules` / `fullBackupContent` / `enableOnBackInvokedCallback` / `resizeableActivity` / `supportsRtl` | 对应 xml 资源存在 | ✅（`res/xml/locales_config.xml` 需与 `values-*` 实际语言一致，见 6.4） |
+| application | `vegabobo.languageselector.App` (`@HiltAndroidApp`) | `android:name` 匹配、`resizeableActivity=true` | ✅ |
+| activity | `vegabobo.languageselector.MainActivity` | `exported=true` + MAIN/LAUNCHER | ✅ |
+| provider | `rikka.shizuku.ShizukuProvider` | exported、`INTERACT_ACROSS_USERS_FULL`、`${applicationId}.shizuku` | ✅ |
+| service | `vegabobo.languageselector.qs.LocaleTileService` | exported、`BIND_QUICK_SETTINGS_TILE`、`QS_TILE` intent-filter + `TOGGLEABLE_TILE` meta | ✅ |
+| provider | `androidx.startup.InitializationProvider` | `exported=false`（AndroidX 合并项） | ✅ 正常 |
+| 权限 | `QUERY_ALL_PACKAGES` / `moe.shizuku.manager.permission.API_V23` | 声明完整 | ✅（merger 追加的 `DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` 为 AndroidX 标准项） |
+| 属性 | `localeConfig` / `dataExtractionRules` / `fullBackupContent` / `enableOnBackInvokedCallback` / `supportsRtl` | 对应 xml 存在 | ✅ |
 
-- [ ] 构建后对照 `app/build/intermediates/merged_manifests/debug/AndroidManifest.xml`：确认 `.qs.LocaleTileService`、`ShizukuProvider`、权限均未被 merger 丢弃；确认无 `tools:` 属性残留告警。
-- [ ] 确认 release variant 的 merged manifest 中 `android:debuggable` 不存在。
+- [x] `aapt2 dump xmltree --file AndroidManifest.xml app-release.apk` 核对：上述组件/权限均在，未被 merger 丢弃。
+- [x] release 清单不含 `android:debuggable`。
+- [x] badging：`package=vegabobo.languageselector`、`versionCode=6`、`versionName=2.0.0`、`minSdkVersion=36`、`targetSdkVersion=36`。
 
-### 5.4 资源 / 字符串一致性（高风险，预计阻塞 lintDebug）
+### 5.4 资源 / 字符串一致性 — 本轮已解决，lint 无翻译类告警
 
-- 快照统计：`values/strings.xml` 定义 99 条；Kotlin 实际引用 24 条（其余为尚未接入的界面预留，`UnusedResources` 只会是 warning）。
-- `values-zh-rCN/strings.xml`：98 条，缺 `app_name`（`translatable="false"`，**不算 MissingTranslation**）→ 基本齐全。
-- `values-ja/strings.xml`、`values-pt-rBR/strings.xml`：各仅 **28** 条，且相对默认语言 **缺 84 条**、另有 **13 条已失效键**：
-  `all_languages, cancel, close, open, pinned, pinned_ok, proceed, region, settings, show_only_user_apps, show_system_apps, unpinned, user_languages`
-- 预计 lint 结果：`MissingTranslation`（84×2 ≈ 168 条）与 `ExtraTranslation`（13×2 = 26 条）默认均为 **Error** 级别 → `:app:lintDebug` 预计失败。
-- 最小修复建议（交 Lead 决策，qa 不改）：
-  1. 若暂不维护日/葡翻译：删除 `values-ja`、`values-pt-rBR` 目录（并同步 `res/xml/locales_config.xml`），或
-  2. 补齐两语言的新键集（推荐但工作量大），或
-  3. 在 `app/build.gradle.kts` 的 `lint { }` 中显式 `disable += "MissingTranslation" / "ExtraTranslation"`（**不推荐**用于发布，会掩盖真实缺陷）。
-- [ ] 构建后核对 `app/build/reports/lint-results-debug.txt` 的 Error 段落。
+- 现状：`values/strings.xml` **101** 条；`values-zh-rCN` **100** 条（缺 `app_name`，`translatable="false"` 属预期）；`values-ja`、`values-pt-rBR` 各 **14** 条（Lead 已精简为部分翻译，**失效键 extra=0**）。
+- Lead 在 `app/build.gradle.kts` 的 `lint { disable += "MissingTranslation" }` 中显式允许英文回退（注释："Translations are partial by design"）；本轮 lint 结果确认 **MissingTranslation / ExtraTranslation 均未出现**。
+- 最终 lint（运行 #2，XML 权威统计）：**0 Error / 85 Warnings**。明细：`GradleDependency` 42、`UnusedResources` 29、`AndroidGradlePluginVersion` 6、`IconLocation` 2、`MonochromeLauncherIcon` 2、`ObsoleteSdkInt` 2、`ModifierFactoryExtensionFunction` 1、`ModifierParameter` 1。
+- `UnusedResources` 29 条为旧 `colors.xml`（purple/teal/black/white）、`ic_launcher_*` 与暂未使用的 strings（`theme*`、`dynamic_color*`、`cd_*` 等），非阻塞、可后续清理。
+- 结论：翻译配置按设计工作，无 Error（F-1 为 Compose runtime lint，已修复，见 §4）。
 
-### 5.5 DI 绑定完整性
+### 5.5 DI 绑定完整性 — 已从 stub 切换为真实实现（通过）
 
-`di/AppModule.kt` 已绑定全部 8 个 contract：ServiceController、LocaleRemote、AppCatalog、LocaleStates、LocaleCatalog、PinnedLocales、HistoryStore、SettingsStore。其中 7 个指向 `di/stubs/Stubs.kt`，仅 SettingsStore 为真实实现。
+`di/AppModule.kt`（`di/stubs/` 已删除）：
 
-- [ ] 构建期：KSP/Hilt 无 `[Dagger/MissingBinding]`、无 `@Binds` 重复绑定错误。
-- [ ] 集成期：stub 替换为真实 service/data 实现时，需同步复查绑定与构造注入（本文件按 Lead 的集成批次追加记录）。
+| contract | 实现 |
+| --- | --- |
+| ServiceController | `ServiceManager` |
+| LocaleRemote | `UserServiceRemote` |
+| AppCatalog | `DefaultAppCatalog` |
+| LocaleStates | `DefaultLocaleStates` |
+| LocaleCatalog | `DefaultLocaleCatalog` |
+| PinnedLocales | `DefaultPinnedLocales` |
+| HistoryStore | `DefaultHistoryStore` |
+| SettingsStore | `SharedPrefsSettingsStore` |
+| `@Provides` | `AppDispatchers`、`AppInfoDb` |
 
-### 5.6 Release 构建 / R8 风险
+- [x] 构建期 KSP/Hilt 无 `[Dagger/MissingBinding]`；release dex 中存在 `DaggerApp_HiltComponents_SingletonC*` 生成类。
+- [x] 无重复绑定/循环依赖错误。
 
-- `release`：`isMinifyEnabled = true` + `isShrinkResources = true`，签名沿用 debug signingConfig（个人使用，已知可接受）。
-- `app/proguard-rules.pro` 仅 `-dontobfuscate`，无显式 keep；依赖方（Hilt、Compose、Coil、libsu、Shizuku、Room、aboutLibraries）应自带 consumer rules，但需实测。
-- 重点关注：R8 的 `Missing class` / `Warning: ... can't find referenced class`；若只出 warning 且 BUILD SUCCESSFUL 可接受，但需记录数量；若 `errors` 则阻塞。
-- [ ] 构建后检查 `app/build/outputs/mapping/release/` 存在（mapping/usage/seeds/configuration），`app-release.apk` 可被 `aapt2 dump badging` 解析。
+### 5.6 Release 构建 / R8 — 通过（54.3s）
 
-### 5.7 单测现状
+- `isMinifyEnabled=true` + `isShrinkResources=true`；release 沿用 debug signingConfig（个人使用，已知可接受）。
+- `app/proguard-rules.pro` 已含反射类 keep（Lead 本轮新增）：
+  `-keep class vegabobo.languageselector.IUserService { *; }`、`IUserService$*`、`service.UserService`、`service.RootUserService`、`service.ShizukuUserServiceArgs`。
+- R8 无 missing-class error；`app/build/outputs/mapping/release/` 已生成（mapping/usage/seeds/configuration）。
+- APK 变化：集成前旧 release `6,917,011 B` → 本轮 `7,270,004 B`（+352,993 B），符合新增 service/data/UI 的预期量级。
 
-- 当前 `app/src/test`、`app/src/androidTest` **均不存在** → 若 verify 时仍如此，`:app:testDebugUnitTest` 为 `NO-SOURCE`（不算失败，但等于零测试覆盖，须在结论中标注）。
-- Lead 已确认：各实现者补齐单测、Lead 本人补 `WindowForm` 断点测试；因此 verify 时预期 test task **会真正执行**，需核对测试数量与通过率（`app/build/reports/tests/testDebugUnitTest/index.html`）。
-- 建议（供 Lead 排期，qa 不实现）：优先对纯 JVM 逻辑补测：
-  - `ui/adaptive/WindowForm.kt:38` `windowWidthFor(widthDp)`（600/840 边界）；
-  - `core/util/LocaleDisplay.kt` `localeDisplayName` / `localeLanguageName`（空串、未知 tag、大小写）；
-  - `core/model/Models.kt` `AppLocaleState.isModified/primaryTag`。
-  - `testImplementation` 已具备 `junit` 与 `kotlinx-coroutines-test`，`unitTests.isReturnDefaultValues = true` 已开。
+### 5.7 单测 — 76 tests / 10 classes，全部通过
 
-## 6. 真机 / 模拟器验收清单（细化版）
+| 测试类 | tests | 结果 |
+| --- | --- | --- |
+| `data.AppListFilterTest` | 8 | ✅ |
+| `data.LocaleBatchTest` | 3 | ✅ |
+| `data.LocaleCatalogTest` | 9 | ✅ |
+| `data.LocaleStatesTest` | 6 | ✅ |
+| `data.PinnedLocaleTest` | 10 | ✅ |
+| `service.ServiceErrorMapperTest` | 10 | ✅ |
+| `service.ServicePureTest` | 9 | ✅ |
+| `ui.adaptive.WindowFormTest` | 3 | ✅（含 600/840 断点） |
+| `ui.detail.DetailViewModelTest` | 12 | ✅ |
+| `ui.home.HomeViewModelTest` | 6 | ✅ |
+| **合计** | **76** | **0 failures / 0 errors** |
 
-> 前提：Lead 完成 DI/导航/service 集成并自测 `compileDebugKotlin` 绿，产出**新** APK（旧产物见 2.1 不可用）。
-> 运行规范：测试期间**不跑 Gradle、不并行跑第二个 emulator**（CPU 争用会污染帧率/冷启动数据）；每个参数变更后先 `am force-stop` 再冷启动；每项记录 `PASS / FAIL / N/A` + 证据文件。
+- 耗时 6.4s；报告 `app/build/reports/tests/testDebugUnitTest/index.html`；`unitTests.isReturnDefaultValues = true` 已开，纯 JVM 测试无需 Robolectric。
+- 覆盖亮点：断点逻辑、locale 编解码/批量映射、ServiceError 映射、Detail/Home ViewModel 状态机。
+
+### 5.8 静态检查 B：release APK 反射加载类保留（R8 裁剪验证）— 通过
+
+用 `apkanalyzer dex packages -d app-release.apk`（SDK cmdline-tools latest）核验 release dex 类表：
+
+| 期望保留的类 | release dex 中状态 |
+| --- | --- |
+| `vegabobo.languageselector.IUserService` | ✅ 存在（9 个方法） |
+| `vegabobo.languageselector.IUserService$Stub` | ✅ 存在（AIDL Stub） |
+| `vegabobo.languageselector.IUserService$Stub$Proxy` | ✅ 存在（12 个方法，含 setApplicationLocales / getApplicationLocales / getApplicationLocalesTags / getSystemLocales / forceStopPackage / getFirstRunningTaskPackage / getUid / exit / destroy） |
+| `vegabobo.languageselector.IUserService$Default` / `IUserService$_Parcel` | ✅ 存在 |
+| `vegabobo.languageselector.service.UserService` | ✅ 存在（21 个方法，Shizuku user service 实现） |
+| `vegabobo.languageselector.service.RootUserService` | ✅ 存在（libsu Root user service） |
+| `vegabobo.languageselector.service.ShizukuUserServiceArgs` | ✅ 存在 |
+| `rikka.shizuku.Shizuku$UserServiceArgs` | ✅ 存在（Shizuku 库反射入口） |
+
+结论：R8 + `-dontobfuscate` + keep 规则有效，**AIDL / UserService / RootUserService 未被裁剪**，跨进程按类名反射实例化的链路安全。
+证据：`$env:TEMP\ls-qa-release-dex-packages.txt`（5.46 MB 包清单）。
+
+- **复验（运行 #2，最终源码重建的 release APK，sha `24BDD83B…`）**：上述反射类仍全部存在（IUserService / $Stub / $Stub$Proxy / $Default / $_Parcel、service.UserService、RootUserService、ShizukuUserServiceArgs、rikka.shizuku.Shizuku$UserServiceArgs），未出现 `PlaceholderHome` 残留；结论不变。
+
+## 6. 真机 / 模拟器验收清单（细化版） — ⚠️ Deferred to real device
+
+> **本轮不执行（用户已明确：不做 VM/模拟器验证，后续由用户在真机验证）。**
+> §6.0–§6.11 全部标记 **Deferred to real device**：仅作为后续真机执行时的操作手册与验收标准，本轮未启动 emulator/AVD、未执行任何设备命令，也不纳入本轮验证结论。
+> 其中 §6.0 / §6.0.1 / §6.1 的 AVD 环境与断点注入、§6.5 的折叠/平板形态、§6.8 的 AVD 性能采集属模拟器专属，明确 Deferred；§6.2–§6.4、§6.6–§6.11 中不依赖模拟器的条目可在真机直接执行。
+> 前提（后续执行时）：使用集成完成后新产出的 APK（旧产物见 2.1 不可用）。
+> 运行规范：测试期间不跑 Gradle、不并行跑第二个 emulator（CPU 争用会污染帧率/冷启动数据）；每个参数变更后先 `am force-stop` 再冷启动；每项记录 `PASS / FAIL / N/A` + 证据文件。
 > 证据目录：`$env:TEMP\ls-qa-device\<yyyyMMdd-HHmm>\`，命名 `<case>-<device>-<param>.png|txt|log`。
 
-### 6.0 本机环境探测结果（2026-10-18，只读）
+### 6.0 【Deferred to real device】本机环境探测结果（2026-10-18，只读；本轮未使用）
 
 | 项 | 值 | 用途 |
 | --- | --- | --- |
@@ -217,7 +321,7 @@ APK 记录：
 | emulator | `...\Sdk\emulator\emulator.exe` | 启动 AVD |
 | 镜像限制 | AVD 均为 `google_apis_playstore_ps16k`（Play 商店镜像）→ `adb root` 不可用，**Root 模式无法在 AVD 验证**，须真机（Magisk/KernelSU）或 AOSP userdebug 镜像 | 见 6.3 的 N/A 说明 |
 
-### 6.0.1 形态/断点矩阵（本机 AVD 实测尺寸换算）
+### 6.0.1 【Deferred to real device】形态/断点矩阵（本机 AVD 尺寸换算，本轮未执行）
 
 换算公式：**width_dp = width_px × 160 / density_dpi**；`WindowForm.windowWidthFor`：<600 → COMPACT，600–839 → MEDIUM，≥840 → EXPANDED；`WindowForm.twoPane = posture != TABLETOP && width != COMPACT`。
 
@@ -246,7 +350,7 @@ adb shell wm size 1680x2400 ; adb shell wm density 320   # 840dp
 adb shell wm size reset ; adb shell wm density reset     # 恢复
 ```
 
-### 6.1 启动 AVD 与设备准备（一次性）
+### 6.1 【Deferred to real device】启动 AVD 与设备准备（一次性；本轮未执行）
 
 ```powershell
 $emu = "C:\Users\minjun\AppData\Local\Android\Sdk\emulator\emulator.exe"
@@ -376,7 +480,7 @@ adb shell cmd statusbar collapse
 - [ ] 点击磁贴：对前台应用切换置顶语言，磁贴标签/副标题随状态更新。
 - [ ] 无 Shizuku 权限时点击给出提示，不崩溃；切回 App 后状态一致。
 
-### 6.8 P2 性能 / 稳定性测量
+### 6.8 【Deferred to real device】P2 性能 / 稳定性测量（AVD 数值仅后续真机参考）
 
 > 所有测量在 AVD 单实例、无 Gradle 构建、屏幕常亮、动画默认开启状态下进行；AVD 的绝对数值仅供相对比较，真机数据以真机为准。
 
@@ -453,7 +557,7 @@ adb shell settings delete global force_resizable_activities
 adb shell am force-stop vegabobo.languageselector
 ```
 
-### 6.11 验收结果记录表（验证时填写）
+### 6.11 验收结果记录表（后续真机执行时填写；本轮 Deferred 未填）
 
 | 用例 ID | 形态 / 参数 | 操作 / 命令 | 预期 | 实际 | 证据文件 | 结论 |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -475,14 +579,16 @@ adb shell am force-stop vegabobo.languageselector
 | Q-01 | QS tile | statusbar expand | 磁贴可用/状态正确 | | | |
 | R-01 | release APK | 安装 + 冒烟 | P0 通过、无 R8 crash | | | |
 
-## 7. 当前阶段已知风险（交接给 Lead，非构建错误）
+## 7. 当前阶段已知风险 / 遗留项（非构建错误）
 
-1. **功能未集成**：`di/stubs/Stubs.kt` 提供全部 service/data 实现，主界面为 `PlaceholderHome`；`AdaptiveScaffold.kt`、`ServiceStatusDialog.kt` 尚未接入调用点。构建通过不代表功能可用。
-2. **lint 预计因翻译失败**（见 5.4）：`values-ja` / `values-pt-rBR` 严重滞后（缺 84、多 13）。建议在集成提交前处理，否则 `:app:lintDebug` 会持续红。
-3. **零单测（已排期）**：当前 `app/src/test` 不存在；Lead 已安排实现者补齐 + 自补 `WindowForm` 断点测试。verify 时若仍未就绪，按 5.7 标注覆盖缺失而非判 FAILED。
-4. **MainActivity 同步 refresh**（见 5.2）：真实 service 层接入后需改为异步状态机，避免主线程 binder 等待。
-5. **AGP 8.7.3 + compileSdk 36**：可能出现 "compileSdk 36 not supported by this AGP" 的构建警告（默认非致命），若 AGP 升级需另立任务。
-6. 旧产物（尤其 `app-release.apk`）来自重写前，禁止作为验收证据；必须重新构建。
+1. **【已修复 ✅】lint Error F-1**：`ProduceStateDoesNotAssignValue` 已通过 `@Suppress` 修复，运行 #2 lint 0 Error；不再阻塞。详见 §4 F-1。
+2. **【已修复 ✅】死代码**：无引用且含硬编码英文的 `ui/navigation/PlaceholderHome.kt` 已删除（-60 行）；最终源码硬编码文案 0。
+3. **未使用资源 29 条（warning）**：旧 `colors.xml`（purple/teal/black/white）、`ic_launcher_background/foreground`、`theme*`/`dynamic_color*`/`cd_*` 等 strings。属于 85 warnings 的主要来源（29/85），非阻塞。
+4. **其余 warnings（56 条）**：`GradleDependency` 42（依赖可升级）、`AndroidGradlePluginVersion` 6、`MonochromeLauncherIcon` 2、`ObsoleteSdkInt` 1、Compose 风格 2（Modifier factory/parameter）。均非 Error。
+5. **真机验收未执行**（用户要求 Deferred）：§6 清单保留；Root 模式与 300+ 应用长列表需真机补测。UI 概念图由 Lead 负责（`other/concepts/`）。
+6. **AGP 8.7.3 + compileSdk 36**：本轮构建未出现相关阻塞/告警失败；若需升级 AGP 另立任务。
+7. **产物对照**：旧 `app-release.apk` 6.92 MB（2026-03-22）→ 本轮 7.27 MB；验收只用 §2.1 新产物。
+8. **`unitTests.isReturnDefaultValues = true`**：让纯 JVM 单测绕过 android.* 桩实现，但也可能掩盖 android 调用返回假值的问题；后续引入 Robolectric 时再评估。
 
 ## 8. 验证运行记录（追加式）
 
@@ -490,10 +596,14 @@ adb shell am force-stop vegabobo.languageselector
 | --- | --- | --- | --- | --- |
 | — | 2026-10-18 10:42 | 准备阶段 | `b11f722` + 2 未跟踪文件 | 仅静态通读与模板建立，未运行 Gradle |
 | — | 2026-10-18 11:00 | 清单细化（Lead 要求） | 同上，未构建 | 探测本机 AVD/Shizuku/aapt2/adb 可用性；细化 6.x：形态矩阵（phone36/tablet36/fold36 的 width_dp 换算）、600/840dp 边界注入、折叠姿态（Device State/hinge）、分屏与自由窗口、字体 2.0/RTL、冷启动/gfxinfo/Perfetto/meminfo 命令、收尾恢复、验收记录表 |
+| — | 2026-10-18 11:05 | verify 第 1 次尝试 | 工作树仍在写入（->`f7e211b`） | **作废**：并发写入竞态——`LanguageSelectorApp.kt` 先引用 `R.string.select_app_title`，2s 后 strings.xml 才落地，`compileDebugKotlin` 报 Unresolved reference；该轮不计入结论 |
+| #1 | 2026-10-18 11:09–11:12 | Lead verify（代码已冻结） | `f7e211b`，tree-hash `133FA16D…763205` 前后一致（79 文件） | compile ✅ 1.1s / test ✅ 76 tests / lint ❌ 1 Error（F-1）/ assembleDebug ✅ 2.8s / assembleRelease ✅ 54.3s；APK 68.03 MB / 7.27 MB |
+| — | 2026-10-18 11:13 | 静态检查 A/B（构建后） | 同上 | 硬编码文案 0 活跃违规（1 死代码 PlaceholderHome）；`runBlocking`=0、IPC 均 io 调度；release 合并清单组件/权限完整；release dex 保留 IUserService(+Stub/Proxy)/UserService/RootUserService/ShizukuUserServiceArgs；AVD 章节按用户要求标记 Deferred to real device |
+| #2 | 2026-10-18 11:16–11:19 | Lead 修复 lint 后复验（代码重新冻结） | `f7e211b` + 2 处修复；tree-hash `6F7CB3F7…91F551`（78 文件）前后一致 | **5 任务全绿**：compile ✅ 3.5s / test ✅ 76 tests / **lint ✅ 18.4s，0 Error / 85 Warnings**（F-1 命中 0）/ assembleDebug ✅ 3.4s / assembleRelease ✅ 36.3s；APK 用最终源码重建（debug sha `DE81ADCE…`、release sha `24BDD83B…`）；release 反射类复验通过 |
 
 ---
 
-### 附：静态扫描参考命令（只读）
+### 附 A：静态扫描参考命令（只读）
 
 ```powershell
 # 硬编码文案
@@ -507,4 +617,19 @@ foreach ($loc in 'values-ja','values-pt-rBR','values-zh-rCN') {
   $n = ([xml](Get-Content "app/src/main/res/$loc/strings.xml")).resources.string.name
   "$loc missing=$(Compare-Object $def $n | Where-Object SideIndicator -eq '<=' | Measure-Object | % Count)"
 }
+```
+
+### 附 B：release 反射类保留核验（本轮已执行，§5.8 数据来源）
+
+```powershell
+$sdk = "C:\Users\minjun\AppData\Local\Android\Sdk"
+& "$sdk\cmdline-tools\latest\bin\apkanalyzer.bat" dex packages -d app\build\outputs\apk\release\app-release.apk |
+  Out-File -Encoding utf8 "$env:TEMP\ls-qa-release-dex-packages.txt"
+Select-String -Path "$env:TEMP\ls-qa-release-dex-packages.txt" `
+  -Pattern '^C .*(IUserService|service\.UserService|RootUserService|ShizukuUserServiceArgs)'
+# 期望命中：IUserService / IUserService$Stub / IUserService$Stub$Proxy / IUserService$Default /
+#           IUserService$_Parcel / service.UserService / service.RootUserService /
+#           service.ShizukuUserServiceArgs / rikka.shizuku.Shizuku$UserServiceArgs
+# 备选（无 apkanalyzer 时）：复制 APK 为 .zip 解包后对每个 classes*.dex 用 dexdump 查 descriptor
+# & "$sdk\build-tools\36.0.0-rc3\dexdump.exe" classes.dex | Select-String 'IUserService|RootUserService'
 ```

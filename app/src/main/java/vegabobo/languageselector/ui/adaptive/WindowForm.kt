@@ -42,6 +42,7 @@ fun windowWidthFor(widthDp: Int): WindowWidth = when {
 }
 
 @Composable
+@Suppress("ProduceStateDoesNotAssignValue") // false positive: the value is assigned inside collect {}
 fun rememberWindowForm(): WindowForm {
     val context = LocalContext.current
     val activity = remember(context) { context.findActivity() }
