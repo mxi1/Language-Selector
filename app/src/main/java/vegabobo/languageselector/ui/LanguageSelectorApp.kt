@@ -42,6 +42,8 @@ import vegabobo.languageselector.core.model.ServiceStatus
 import vegabobo.languageselector.ui.about.AboutScreen
 import vegabobo.languageselector.ui.adaptive.AdaptiveScaffold
 import vegabobo.languageselector.ui.adaptive.FoldPosture
+import vegabobo.languageselector.ui.adaptive.ListPaneStyle
+import vegabobo.languageselector.ui.adaptive.listPaneStyle
 import vegabobo.languageselector.ui.adaptive.rememberWindowForm
 import vegabobo.languageselector.ui.components.EmptyState
 import vegabobo.languageselector.ui.detail.DetailScreen
@@ -90,6 +92,7 @@ fun LanguageSelectorApp(
     val serviceReady = serviceStatus is ServiceStatus.Ready
     val showOnboarding = !serviceReady && !browseOnly
     val twoPane = windowForm.twoPane || windowForm.posture == FoldPosture.TABLETOP
+    val iconRail = listPaneStyle(windowForm) == ListPaneStyle.ICON_RAIL
 
     LanguageSelectorTheme(themeMode = themeMode, dynamicColor = dynamicColor) {
         if (twoPane && showAbout) {
@@ -131,6 +134,7 @@ fun LanguageSelectorApp(
                             onOpenServiceStatus = { showServiceDialog = true },
                             snackbarHostState = snackbarHostState,
                             modifier = paneModifier,
+                            iconRail = iconRail,
                         )
                     },
                     detailPane = { paneModifier ->

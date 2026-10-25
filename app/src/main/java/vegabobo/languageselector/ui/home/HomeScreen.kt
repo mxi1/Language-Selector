@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -88,6 +89,7 @@ fun HomeScreen(
     onOpenServiceStatus: () -> Unit,
     snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier,
+    iconRail: Boolean = false,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val message = state.message
@@ -98,6 +100,24 @@ fun HomeScreen(
             snackbarHostState.showSnackbar(messageText)
             viewModel.consumeMessage()
         }
+    }
+
+    if (iconRail) {
+        HomeIconRail(
+            state = state,
+            onQueryChange = viewModel::onQueryChange,
+            onToggleSystem = viewModel::toggleSystem,
+            onToggleModified = viewModel::toggleModified,
+            onRefresh = viewModel::refresh,
+            onAppClick = { app ->
+                viewModel.selectApp(app.packageName)
+                onAppClick(app)
+            },
+            onOpenAbout = onOpenAbout,
+            onOpenServiceStatus = onOpenServiceStatus,
+            modifier = modifier,
+        )
+        return
     }
 
     HomeContent(
@@ -176,11 +196,12 @@ private fun HomeContent(
                     onToggleSystem = onToggleSystem,
                     onToggleModified = onToggleModified,
                 )
-                Box(
+                BoxWithConstraints(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f),
                 ) {
+                    val denseList = maxWidth < 320.dp
                     if (state.isInitialLoading) {
                         Box(
                             modifier = Modifier.fillMaxSize(),
@@ -200,6 +221,7 @@ private fun HomeContent(
                                 AppList(
                                     state = state,
                                     showChevron = isCompact,
+                                    dense = denseList,
                                     onAppClick = onAppClick,
                                     onClearRecent = onClearRecent,
                                 )
@@ -388,6 +410,7 @@ private fun EmptyAppList(query: String) {
 private fun AppList(
     state: HomeUiState,
     showChevron: Boolean,
+    dense: Boolean = false,
     onAppClick: (AppSummary) -> Unit,
     onClearRecent: () -> Unit,
 ) {
@@ -414,6 +437,7 @@ private fun AppList(
                     app = app,
                     state = state,
                     showChevron = showChevron,
+                    dense = dense,
                     onAppClick = onAppClick,
                 )
             }
@@ -438,6 +462,7 @@ private fun AppList(
                     app = app,
                     state = state,
                     showChevron = showChevron,
+                    dense = dense,
                     onAppClick = onAppClick,
                 )
             }
@@ -450,6 +475,7 @@ private fun HomeAppRow(
     app: AppSummary,
     state: HomeUiState,
     showChevron: Boolean,
+    dense: Boolean,
     onAppClick: (AppSummary) -> Unit,
 ) {
     AppRow(
@@ -458,6 +484,7 @@ private fun HomeAppRow(
         isSelected = state.selectedPackage == app.packageName,
         onClick = { onAppClick(app) },
         showChevron = showChevron,
+        dense = dense,
     )
 }
 

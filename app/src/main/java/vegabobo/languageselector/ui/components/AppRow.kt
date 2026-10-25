@@ -38,6 +38,7 @@ fun AppRow(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     showChevron: Boolean = false,
+    dense: Boolean = false,
 ) {
     val background = if (isSelected) {
         MaterialTheme.colorScheme.secondaryContainer
@@ -46,7 +47,9 @@ fun AppRow(
     }
     // At very large font scales the trailing language label would squeeze the app name into an
     // ellipsis; show the current language as a badge under the package name instead.
-    val showTrailingLocale = localeState?.isModified == true && LocalDensity.current.fontScale <= 1.4f
+    val showTrailingLocale = !dense &&
+        localeState?.isModified == true &&
+        LocalDensity.current.fontScale <= 1.4f
     val currentTag = localeState?.primaryTag
     Row(
         modifier = modifier
@@ -55,7 +58,7 @@ fun AppRow(
             .clip(RoundedCornerShape(18.dp))
             .background(background)
             .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+            .padding(horizontal = if (dense) 8.dp else 12.dp, vertical = if (dense) 6.dp else 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         AppIcon(
@@ -63,7 +66,7 @@ fun AppRow(
             version = app.iconVersion,
             contentDescription = stringResource(R.string.cd_app_icon, app.label),
         )
-        Spacer(Modifier.width(14.dp))
+        Spacer(Modifier.width(if (dense) 10.dp else 14.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = app.label,
@@ -71,21 +74,23 @@ fun AppRow(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            Text(
-                text = app.packageName,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+            if (!dense) {
+                Text(
+                    text = app.packageName,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
             Row(verticalAlignment = Alignment.CenterVertically) {
-                if (app.isSystem) {
+                if (app.isSystem && !dense) {
                     AppBadge(text = stringResource(R.string.label_system))
                 }
                 if (localeState?.isModified == true) {
                     AppBadge(text = stringResource(R.string.label_modified))
                 }
-                if (!showTrailingLocale && currentTag != null) {
+                if (!dense && !showTrailingLocale && currentTag != null) {
                     AppBadge(text = localeDisplayName(currentTag))
                 }
             }

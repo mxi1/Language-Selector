@@ -679,3 +679,36 @@ Select-String -Path "$env:TEMP\ls-qa-release-dex-packages.txt" `
 ### 9.4 证据截图（`captures/`，不纳入 git）
 
 `device_01_launch.png`（旧版启动崩溃前的系统状态）、`device_02_after_migration.png`、`device_03_home.png`（首页）、`device_04_detail.png`（Bitwarden 详情）、`device_05_set_zh.png`（设置为中文 + Undo Snackbar）、`device_06_bitwarden_zh.png`（FLAG_SECURE 黑屏）、`device_07_reset.png`/`device_08_reset_ok.png`（重置）、`device_09_home_recent.png`（最近使用 + 已修改徽标）、`device_10_search.png`/`device_13_search2.png`/`device_14_search_ok.png`（搜索/IME）、`device_11_system_filter.png`（系统应用过滤）、`device_12_modified_filter.png`（仅已修改）、`device_16_landscape.png`（横屏双栏）、`device_17_font200.png`→`device_22_font200_final.png`（字体 200% 修复前后）、`device_18_dark.png`→`device_19_dark_fixed.png`（深色修复前后）、`device_23_qs_tile.png`（QS 面板）、`issue_bottom_light.png`/`issue_bottom_light_fixed2.png`（底部未沉浸 → 修复）、`fix_immersive_home.png`/`fix_immersive_detail.png`（修复后列表延伸到手势条下方）。
+
+---
+
+## 10. 折叠屏布局与“推荐”语言改进（2026-10-25）
+
+设备：Xiaomi 2608BPX34C（lhasa，折叠屏）
+- 内屏竖屏：1672×2364 @440dpi ≈ **608dp**（Medium，FLAT）→ 以前双栏列表 360dp + 详情 248dp
+- 内屏横屏：2364×1672 @440dpi ≈ **860dp**（Expanded）→ 以前列表 400dp + 详情 460dp
+- 外屏/紧凑窗口：1168×1712 @440dpi ≈ 425dp（Compact，单栏）
+
+### 10.1 改动
+
+| 编号 | 改动 | 说明 |
+| --- | --- | --- |
+| U-1 | “推荐”语言 = **en-US + 系统默认语言全部地区变体** | 之前只有系统 locale 一项。现按 `buildSuggestedOptions()` 生成：`en-US` 置首，随后追加当前系统语言（如中文）的全部地区选项并去重；系统语言为英文时自动合并去重。注：用户原始描述为 en-GB，确认回复改为 en-US，故按 en-US 实现（改回 en-GB 只需改常量）。 |
+| U-2 | 内屏竖屏（Medium portrait）改为 **图标列表栏 88dp + 详情 ~520dp** | `listPaneStyle()` 判定；图标栏含搜索/系统应用/仅已修改/更多四个入口，按字母分组显示应用图标；搜索为全屏浮层（图标栏太窄放不下输入框）。 |
+| U-3 | Expanded 横屏改为 **列表 30% / 详情 70%** | 列表约 258dp（860dp 窗口）；列表宽度 <320dp 时自动使用 dense 行（隐藏包名/系统徽标，只保留名称与“已修改”徽标），避免名称被截成 “b…”。 |
+| U-4 | 紧凑窗口回归 | 425dp 外屏仍为单栏导航（列表→详情），不受图标栏/比例改动影响。 |
+
+代码位置：`data/LocaleCatalogRepository.kt`（buildSuggestedOptions）、`ui/adaptive/WindowForm.kt`（listPaneStyle）、`ui/adaptive/AdaptiveScaffold.kt`（88dp rail / 30-70）、`ui/home/HomeIconRail.kt`（图标栏与搜索浮层）、`ui/components/AppRow.kt`（dense 行）。
+
+### 10.2 验证
+
+- 单元测试：**83 tests / 12 classes，0 failures**（新增推荐语言 5 个用例 + 列表样式 4 个用例）
+- `:app:lintDebug` ✅ 0 Error；`:app:assembleRelease` ✅
+- release APK：7,319,156 B（6.98 MB），sha256 `30B430FB1934EA4DDB59D7D3BEF615FFCB4E9CE58B7DA464596993D021324CE0`
+- 真机截图（`captures/`，不纳入 git）：
+  - `fold_portrait_rail.png`：内屏竖屏图标栏 + 详情空态
+  - `fold_portrait_rail_detail.png`：选中 Bitwarden 后详情完整宽度；推荐区显示“英语（美国）+ 中文各地区变体”
+  - `fold_portrait_rail_search.png`：图标栏全屏搜索浮层
+  - `fold_landscape_3070_dense.png`：内屏横屏 30%/70%，列表为 dense 行
+  - `fold_compact_regression.png`：425dp 模拟紧凑窗口仍为单栏
+- 未覆盖：Root、物理折叠姿态（tabletop/book）仍按原逻辑；图标栏暂无“最近使用”分组（可通过搜索浮层访问历史应用）。

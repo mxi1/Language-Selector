@@ -97,26 +97,89 @@ class LocaleCatalogTest {
     }
 
     @Test
-    fun `suggested locales are deduplicated system locales`() = runTest {
+    fun `suggested locales keep all regions of the system language and add en-US`() = runTest {
         val catalog = DefaultLocaleCatalog(
-            remote = CatalogFakeLocaleRemote(listOf("fr-FR", "fr-FR", "en-US")),
+            remote = CatalogFakeLocaleRemote(listOf("zh-Hans-CN")),
             dispatchers = testDispatchers(),
         )
 
-        assertEquals(listOf("fr-FR", "en-US"), catalog.suggested().map { it.languageTag })
+        val suggested = catalog.suggested().map { it.languageTag }
+
+        assertEquals("en-US", suggested.first())
+        assertTrue(suggested.contains("zh-Hans-CN"))
+        // Every available Chinese region variant must be present, not just the system locale.
+        assertTrue(suggested.count { it.startsWith("zh-") } >= 2)
+        assertEquals(suggested.distinct(), suggested)
     }
 
     @Test
-    fun `suggested locales fall back to the default locale`() = runTest {
+    fun `suggested locales fall back to en-US and the default locale`() = runTest {
         val catalog = DefaultLocaleCatalog(
             remote = CatalogFakeLocaleRemote(emptyList()),
             dispatchers = testDispatchers(),
         )
 
-        assertEquals(
-            listOf(Locale.getDefault().toLanguageTag()),
-            catalog.suggested().map { it.languageTag },
+        val suggested = catalog.suggested().map { it.languageTag }
+
+        assertEquals("en-US", suggested.first())
+        assertTrue(suggested.contains(Locale.getDefault().toLanguageTag()))
+    }
+
+    @Test
+    fun `buildSuggestedOptions expands the system language group`() {
+        val groups = buildLocaleGroups(
+            listOf(
+                Locale.forLanguageTag("zh-Hans-CN"),
+                Locale.forLanguageTag("zh-Hant-TW"),
+                Locale.forLanguageTag("zh-Hant-HK"),
+                Locale.forLanguageTag("en-US"),
+                Locale.forLanguageTag("en-GB"),
+            ),
+            displayLocale,
         )
+
+        val suggested = buildSuggestedOptions(
+            systemTags = listOf("zh-Hans-CN"),
+            groups = groups,
+            displayLocale = displayLocale,
+        ).map { it.languageTag }
+
+        assertEquals("en-US", suggested.first())
+        assertEquals(listOf("en-US", "zh-Hans-CN", "zh-Hant-HK", "zh-Hant-TW"), suggested)
+    }
+
+    @Test
+    fun `buildSuggestedOptions handles an English system without duplicates`() {
+        val groups = buildLocaleGroups(
+            listOf(
+                Locale.forLanguageTag("en-US"),
+                Locale.forLanguageTag("en-GB"),
+                Locale.forLanguageTag("zh-Hans-CN"),
+            ),
+            displayLocale,
+        )
+
+        val suggested = buildSuggestedOptions(
+            systemTags = listOf("en-GB"),
+            groups = groups,
+            displayLocale = displayLocale,
+        ).map { it.languageTag }
+
+        assertEquals("en-US", suggested.first())
+        assertEquals(suggested.distinct(), suggested)
+        assertTrue(suggested.contains("en-GB"))
+        assertTrue(!suggested.contains("zh-Hans-CN"))
+    }
+
+    @Test
+    fun `buildSuggestedOptions falls back when the group is missing`() {
+        val suggested = buildSuggestedOptions(
+            systemTags = listOf("fr-FR"),
+            groups = emptyList(),
+            displayLocale = displayLocale,
+        ).map { it.languageTag }
+
+        assertEquals(listOf("en-US", "fr-FR"), suggested)
     }
 
     @Test

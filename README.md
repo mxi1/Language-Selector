@@ -19,13 +19,16 @@ an optional Root mode is available for devices without Shizuku.
 - Set / read / reset per-app locales for user and system apps.
 - Adaptive UI for many screen forms:
   - phones (portrait and landscape)
-  - foldables: two-pane when unfolded, hinge-aware tabletop/book postures
-  - tablets and desktop windows (medium/expanded width classes)
+  - foldables: two-pane when unfolded, hinge-aware tabletop/book postures; the unfolding inner
+    screen in portrait uses an 88dp icon rail so the app detail keeps most of the width
+  - tablets and desktop windows (medium/expanded width classes); expanded windows use a
+    30% / 70% list-detail split with dense rows in the narrow list
   - split screen / freeform multi-window, dynamic font scale and RTL
 - Smooth interaction: lazy icon loading (Coil), one batched locale query for all apps,
   debounced search, stable list keys, predictive back and lightweight transitions.
-- Language picker with suggested (system) languages, pinned languages and all available
-  languages grouped by language with region variants.
+- Language picker with suggested languages (English (United States) plus every region variant of
+  the current system language), pinned languages and all available languages grouped by language
+  with region variants.
 - Quick Settings tile: cycles the pinned languages for the foreground app.
 - Recently used apps, app filters (system / modified) and app search.
 - Root mode as a fallback when Shizuku is not available.
@@ -38,7 +41,8 @@ an optional Root mode is available for devices without Shizuku.
 
 The concept boards above summarise the responsive layout matrix (compact / medium / expanded /
 tabletop / book), the interaction model (apply + undo, system-app confirmation, QS tile states) and the
-motion/performance budget. Editable sources are in `other/concepts/`.
+motion/performance budget. Editable sources are in `other/concepts/`. Current foldable behaviour:
+icon rail on the medium-portrait inner screen and a 30/70 list-detail split on expanded windows.
 
 ### Usage
 

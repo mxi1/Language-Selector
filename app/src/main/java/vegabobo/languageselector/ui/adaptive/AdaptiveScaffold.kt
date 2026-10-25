@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
@@ -49,10 +50,10 @@ fun AdaptiveScaffold(
             }
         }
 
-        FoldPosture.FLAT -> {
-            val listWidth = if (windowForm.width == WindowWidth.EXPANDED) 400.dp else 360.dp
-            Row(modifier = modifier.fillMaxSize()) {
-                Box(Modifier.width(listWidth).fillMaxHeight()) {
+        FoldPosture.FLAT -> when (listPaneStyle(windowForm)) {
+            // Foldable inner screen (and tablet portrait): icon rail keeps the detail readable.
+            ListPaneStyle.ICON_RAIL -> Row(modifier = modifier.fillMaxSize()) {
+                Box(Modifier.width(IconRailWidth).fillMaxHeight()) {
                     listPane(Modifier.fillMaxSize())
                 }
                 VerticalDivider()
@@ -60,9 +61,36 @@ fun AdaptiveScaffold(
                     detailPane(Modifier.fillMaxSize())
                 }
             }
+
+            ListPaneStyle.FULL -> if (windowForm.width == WindowWidth.EXPANDED) {
+                // Landscape / large window: 30/70 keeps the detail pane dominant.
+                Row(modifier = modifier.fillMaxSize()) {
+                    Box(Modifier.weight(0.30f).fillMaxHeight()) {
+                        listPane(Modifier.fillMaxSize())
+                    }
+                    VerticalDivider()
+                    Box(Modifier.weight(0.70f).fillMaxHeight()) {
+                        detailPane(Modifier.fillMaxSize())
+                    }
+                }
+            } else {
+                // Medium landscape windows: a compact fixed list still leaves room for detail.
+                Row(modifier = modifier.fillMaxSize()) {
+                    Box(Modifier.width(280.dp).fillMaxHeight()) {
+                        listPane(Modifier.fillMaxSize())
+                    }
+                    VerticalDivider()
+                    Box(Modifier.weight(1f).fillMaxHeight()) {
+                        detailPane(Modifier.fillMaxSize())
+                    }
+                }
+            }
         }
     }
 }
+
+/** Width of the icon-only app list rail used on medium portrait windows. */
+val IconRailWidth: Dp = 88.dp
 
 @Composable
 private fun HingeSpacer(gap: androidx.compose.ui.unit.Dp, horizontal: Boolean) {

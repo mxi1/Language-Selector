@@ -21,17 +21,43 @@ enum class WindowWidth { COMPACT, MEDIUM, EXPANDED }
 /** Physical form factor derived from folding features. */
 enum class FoldPosture { FLAT, TABLETOP, BOOK }
 
+/** How the app list pane is rendered next to the detail pane. */
+enum class ListPaneStyle {
+    /** Full rows: icon + name + package + current language. */
+    FULL,
+
+    /** Narrow icon rail (~88dp) so the detail pane keeps most of the window width. */
+    ICON_RAIL,
+}
+
 /**
  * Everything the adaptive scaffolds need to know about the current window.
  * [hingeGap] is the size of a separating hinge/fold in dp (0 when flat).
+ * [isPortrait] is derived from the actual window bounds, not from the device orientation.
  */
 data class WindowForm(
     val width: WindowWidth,
     val posture: FoldPosture,
     val hingeGap: Dp,
+    val isPortrait: Boolean = true,
 ) {
     val isWide: Boolean get() = width != WindowWidth.COMPACT
     val twoPane: Boolean get() = posture != FoldPosture.TABLETOP && isWide
+}
+
+/**
+ * Medium portrait windows (for example the unfolded inner screen of a foldable at ~608dp)
+ * would leave the detail pane only ~248dp with a full-width list, which truncates the quick
+ * actions and language rows. Use an icon-only rail instead so the detail pane gets most of
+ * the width. Tablet portrait windows get the same treatment: an icon rail is a familiar
+ * pattern and keeps the selected app's content readable.
+ */
+fun listPaneStyle(form: WindowForm): ListPaneStyle = when {
+    form.posture == FoldPosture.FLAT &&
+        form.width == WindowWidth.MEDIUM &&
+        form.isPortrait -> ListPaneStyle.ICON_RAIL
+
+    else -> ListPaneStyle.FULL
 }
 
 /** Material 3 breakpoints, extracted for unit testing. */
@@ -49,6 +75,7 @@ fun rememberWindowForm(): WindowForm {
     val density = LocalDensity.current
     val configuration = LocalConfiguration.current
     val widthDp = configuration.screenWidthDp
+    val heightDp = configuration.screenHeightDp
 
     val layoutInfo by produceState<WindowLayoutInfo?>(initialValue = null, activity) {
         val host = activity ?: return@produceState
@@ -80,5 +107,6 @@ fun rememberWindowForm(): WindowForm {
         width = windowWidthFor(widthDp),
         posture = posture,
         hingeGap = hingeGap,
+        isPortrait = heightDp > widthDp,
     )
 }

@@ -70,9 +70,44 @@ internal fun buildLocaleGroups(
         .sortedWith(Comparator { left, right -> collator.compare(left.languageName, right.languageName) })
 }
 
+/**
+ * Builds the "suggested" section of the language picker:
+ * 1. English (United States) — the most common fallback for multilingual users;
+ * 2. every region variant of the current system default language (for example, a Chinese
+ *    system shows 中文（中国/台湾/香港/新加坡…）, including the current system locale itself).
+ *
+ * Options are deduplicated by tag and keep the catalog order of the system language group.
+ */
+internal fun buildSuggestedOptions(
+    systemTags: List<String>,
+    groups: List<LocaleGroup>,
+    displayLocale: Locale = Locale.getDefault(),
+): List<LocaleOption> {
+    val options = LinkedHashMap<String, LocaleOption>()
+    val englishUs = localeOption("en-US", displayLocale)
+    options[englishUs.languageTag] = englishUs
+
+    val systemLocales = systemTags.mapNotNull { tag ->
+        tag.trim().takeIf { it.isNotEmpty() }?.let { Locale.forLanguageTag(it) }
+    }
+    // When the platform reports no system locale, fall back to the app's current locale.
+    val locales = systemLocales.ifEmpty { listOf(displayLocale) }
+    val systemLanguageNames = locales
+        .map { localeLanguageName(it.toLanguageTag(), displayLocale) }
+        .toSet()
+
+    val systemLanguageGroups = groups.filter { it.languageName in systemLanguageNames }
+    val candidates = if (systemLanguageGroups.isNotEmpty()) {
+        systemLanguageGroups.flatMap { it.options }
+    } else {
+        locales.map { localeOption(it.toLanguageTag(), displayLocale) }
+    }
+    candidates.forEach { options.putIfAbsent(it.languageTag, it) }
+    return options.values.toList()
+}
+
 /** Case-insensitive, trim-tolerant search over display name, tag and language name. */
-internal fun filterLocaleOptions(query: String, groups: List<LocaleGroup>): List<LocaleOption> {
-    val needle = query.trim()
+internal fun filterLocaleOptions(query: String, groups: List<LocaleGroup>): List<LocaleOption> {    val needle = query.trim()
     if (needle.isEmpty()) return groups.flatMap { it.options }
     return groups
         .asSequence()
@@ -106,14 +141,9 @@ class DefaultLocaleCatalog @Inject constructor(
     }
 
     override suspend fun suggested(): List<LocaleOption> = withContext(dispatchers.io) {
-        val systemTags = remote.getSystemLocales()
-            .mapNotNull { tag -> tag.trim().takeIf { it.isNotEmpty() } }
-            .distinct()
-        if (systemTags.isEmpty()) {
-            listOf(localeOption(Locale.getDefault().toLanguageTag()))
-        } else {
-            systemTags.map { tag -> localeOption(tag) }
-        }
+        val groups = loadGroups(Locale.getDefault())
+        val systemTags = runCatching { remote.getSystemLocales() }.getOrDefault(emptyList())
+        buildSuggestedOptions(systemTags, groups, Locale.getDefault())
     }
 
     /** Searches [groups] for [query]; an empty query returns every option. */
